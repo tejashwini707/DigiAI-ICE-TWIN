@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Polar night surfaces — deliberately blue-black, not pure #000 */
+  --bg-deep: #070B12;
+  --bg-panel: #0D141F;
+  --bg-panel-raised: #141D2B;
+  --border-subtle: #1F2937;
+  --border-frozen: #2A3B4A;
+
+  /* Aurora accent pair — the twin's "alive" signal */
+  --ice-cyan: #6FE7DD;
+  --ice-cyan-dim: #3D8F87;
+  --aurora-violet: #9B8CFF;
+
+  /* Status */
+  --status-nominal: #4ADE80;
+  --status-warning: #F4A93B;
+  --status-critical: #FF5D5D;
+  --status-offline: #57657A;
+
+  /* Text */
+  --text-primary: #EAF2F5;
+  --text-secondary: #8B98A8;
+  --text-tertiary: #5B6472;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(111, 231, 221, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(155, 140, 255, 0.04), transparent);
+}
+
+::selection {
+  background: var(--ice-cyan);
+  color: var(--bg-deep);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-frozen); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ice-cyan-dim); }
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+
+@keyframes aurora-flow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.aurora-border {
+  background: linear-gradient(120deg, var(--ice-cyan), var(--aurora-violet), var(--ice-cyan));
+  background-size: 200% 200%;
+  animation: aurora-flow 6s ease infinite;
+}
+
+.frozen-border {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--border-frozen),
+    var(--border-frozen) 6px,
+    var(--bg-panel) 6px,
+    var(--bg-panel) 12px
+  );
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.003); }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-border, .pulse-dot, .animate-pulse-subtle, .animate-bounce-subtle { animation: none; }
+}
