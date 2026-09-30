@@ -72,11 +72,15 @@ if (process.env.MONGO_URI) {
   console.log("✓ Operating in High-Availability In-Memory / Dual-Mode Store");
 }
 
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`❄ Antarctic Station Digital Twin Server running on :${PORT}`);
-  console.log(`❄ Telemetry Simulator active (3000ms real-time tick)`);
-  console.log(`❄ AI Prediction & Risk Engine initialized`);
-  console.log(`=======================================================`);
-  startSimulator(3000); // 3s live tick interval
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`❄ Antarctic Station Digital Twin Server running on :${PORT}`);
+    console.log(`❄ Telemetry Simulator active (3000ms real-time tick)`);
+    console.log(`❄ AI Prediction & Risk Engine initialized`);
+    console.log(`=======================================================`);
+    startSimulator(3000); // 3s live tick interval
+  });
+}
+
+export default app;
