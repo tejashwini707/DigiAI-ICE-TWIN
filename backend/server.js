@@ -50,6 +50,22 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/personnel", personnelRoutes);
 app.use("/api/incidents", incidentRoutes);
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDistPath = path.join(__dirname, "../frontend/dist");
+
+app.use(express.static(frontendDistPath));
+
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
+    if (err) next();
+  });
+});
+
 app.use((err, req, res, next) => {
   console.error("Express error:", err);
   res.status(500).json({ error: "Internal server error" });

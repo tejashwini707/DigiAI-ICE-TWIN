@@ -1,10 +1,6 @@
 # Dependencies
 node_modules/
 
-# Production build outputs
-dist/
-frontend/dist/
-
 # Environment files
 .env
 *.env
