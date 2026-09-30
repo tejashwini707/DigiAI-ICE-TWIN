@@ -5,7 +5,11 @@ import dotenv from "dotenv";
 import dns from "dns";
 
 // Fix for Node.js querySrv ECONNREFUSED on Windows with local ISP DNS
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (err) {
+  console.warn("Custom DNS servers setting skipped:", err.message);
+}
 
 import authRoutes from "./routes/authRoutes.js";
 import stationRoutes from "./routes/stationRoutes.js";
