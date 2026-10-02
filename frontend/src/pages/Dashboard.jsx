@@ -613,7 +613,9 @@ export default function Dashboard() {
       {/* Critical Alert Banner - High Priority at top of mission dashboard */}
       <CriticalAlertBanner
         prediction={prediction}
+        stationCode={stationCode}
         onExecuteMitigation={handleExecuteMitigation}
+        onResetNominal={handleResolveDisaster}
       />
 
       {/* Action Notification Toast */}
