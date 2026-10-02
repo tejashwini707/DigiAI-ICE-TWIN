@@ -73,12 +73,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Attempt MongoDB connection asynchronously with a short timeout
+// Attempt MongoDB connection asynchronously with explicit dbName DigiAI-ICE-TWIN
+const mongoOptions = {
+  dbName: "DigiAI-ICE-TWIN",
+  serverSelectionTimeoutMS: 5000,
+};
+
 if (process.env.MONGO_URI) {
   mongoose
-    .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 4000 })
+    .connect(process.env.MONGO_URI, mongoOptions)
     .then(() => {
-      console.log("✓ MongoDB Atlas connected successfully");
+      console.log("✓ MongoDB Atlas connected successfully [Database: DigiAI-ICE-TWIN]");
     })
     .catch((err) => {
       console.warn("⚠ MongoDB connection unavailable:", err.message);
