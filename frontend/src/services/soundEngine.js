@@ -3,43 +3,61 @@ class SoundEngine {
   constructor() {
     this.ctx = null;
     this.muted = false;
-    this.sirenOsc = null;
-    this.sirenGain = null;
-    this.sirenInterval = null;
     this.isSirenPlaying = false;
+    this.sirenTimer = null;
+    this.currentOscs = [];
+    this.isAutoplayBlocked = false;
     this.attachAutoUnlock();
   }
 
   attachAutoUnlock() {
     if (typeof window !== "undefined") {
       const unlock = () => {
-        this.init();
+        this.ensureAudio().then(() => {
+          if (this.isSirenPlaying && !this.muted) {
+            this.playSirenTone();
+          }
+        }).catch(() => {});
         window.removeEventListener("click", unlock);
         window.removeEventListener("keydown", unlock);
         window.removeEventListener("touchstart", unlock);
       };
-      window.addEventListener("click", unlock);
-      window.addEventListener("keydown", unlock);
-      window.addEventListener("touchstart", unlock);
+      window.addEventListener("click", unlock, { passive: true });
+      window.addEventListener("keydown", unlock, { passive: true });
+      window.addEventListener("touchstart", unlock, { passive: true });
+    }
+  }
+
+  async ensureAudio() {
+    if (typeof window === "undefined") return false;
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
+      }
+      if (this.ctx && this.ctx.state === "suspended") {
+        await this.ctx.resume();
+      }
+      this.isAutoplayBlocked = !this.ctx || this.ctx.state !== "running";
+      return !this.isAutoplayBlocked;
+    } catch {
+      this.isAutoplayBlocked = true;
+      return false;
     }
   }
 
   init() {
-    if (!this.ctx && typeof window !== "undefined") {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
-      }
-    }
-    if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume().catch(() => {});
-    }
+    this.ensureAudio();
   }
 
   setMuted(muted) {
-    this.muted = muted;
-    if (muted) {
-      this.stopSiren();
+    this.muted = Boolean(muted);
+    if (this.muted) {
+      this.stopSirenNodes();
+    } else if (this.isSirenPlaying) {
+      this.playSirenTone();
     }
   }
 
@@ -50,140 +68,175 @@ class SoundEngine {
   // Soft radar sonar sweep sound
   playPing() {
     if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
+    this.ensureAudio().then((ready) => {
+      if (!ready || !this.ctx) return;
+      try {
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
 
-    try {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
 
-      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
 
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.3);
-    } catch {
-      // Audio autoplay policy fallback
-    }
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } catch {
+        // safe fallback
+      }
+    });
   }
 
-  // Alias for playPing
   playSonar() {
-    try {
-      this.playPing();
-    } catch {
-      // safe fallback
+    this.playPing();
+  }
+
+  // Cleanly stops currently sounding oscillator nodes
+  stopSirenNodes() {
+    if (this.currentOscs && this.currentOscs.length > 0) {
+      this.currentOscs.forEach(({ osc, gain }) => {
+        try {
+          if (this.ctx) {
+            gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.0001, this.ctx.currentTime + 0.05);
+            osc.stop(this.ctx.currentTime + 0.05);
+          } else {
+            osc.stop();
+          }
+        } catch {
+          // ignore already stopped
+        }
+      });
+      this.currentOscs = [];
     }
   }
 
-  // Emergency alarm klaxon / siren pulse
+  // Plays a single warbling emergency siren cycle (dual-tone European / Polar Station Alarm)
+  playSirenTone() {
+    if (this.muted || !this.isSirenPlaying) return;
+    this.ensureAudio().then((ready) => {
+      if (!ready || !this.ctx || this.muted || !this.isSirenPlaying) return;
+
+      try {
+        const now = this.ctx.currentTime;
+        const duration = 0.75; // 750ms per emergency warble cycle
+
+        // Oscillator 1: Modulating Siren Warble
+        const osc1 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        osc1.type = "sawtooth";
+        osc1.frequency.setValueAtTime(740, now);
+        osc1.frequency.linearRampToValueAtTime(960, now + 0.35);
+        osc1.frequency.linearRampToValueAtTime(740, now + duration);
+
+        gain1.gain.setValueAtTime(0.18, now);
+        gain1.gain.setValueAtTime(0.18, now + duration - 0.05);
+        gain1.gain.linearRampToValueAtTime(0.001, now + duration);
+
+        osc1.connect(gain1);
+        gain1.connect(this.ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + duration);
+
+        // Oscillator 2: Sub-harmonic Square Klaxon for urgency & presence
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.type = "square";
+        osc2.frequency.setValueAtTime(370, now);
+        osc2.frequency.linearRampToValueAtTime(480, now + 0.35);
+        osc2.frequency.linearRampToValueAtTime(370, now + duration);
+
+        gain2.gain.setValueAtTime(0.08, now);
+        gain2.gain.setValueAtTime(0.08, now + duration - 0.05);
+        gain2.gain.linearRampToValueAtTime(0.001, now + duration);
+
+        osc2.connect(gain2);
+        gain2.connect(this.ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + duration);
+
+        this.currentOscs = [
+          { osc: osc1, gain: gain1 },
+          { osc: osc2, gain: gain2 },
+        ];
+      } catch {
+        // safe fallback
+      }
+    });
+  }
+
+  // Emergency alarm klaxon / siren pulse (single shot)
   playAlarm() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    try {
-      const now = this.ctx.currentTime;
-
-      // Pulse 1
-      const osc1 = this.ctx.createOscillator();
-      const gain1 = this.ctx.createGain();
-      osc1.type = "sawtooth";
-      osc1.frequency.setValueAtTime(440, now);
-      osc1.frequency.linearRampToValueAtTime(880, now + 0.2);
-      gain1.gain.setValueAtTime(0.15, now);
-      gain1.gain.linearRampToValueAtTime(0.001, now + 0.25);
-      osc1.connect(gain1);
-      gain1.connect(this.ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.25);
-
-      // Pulse 2
-      const osc2 = this.ctx.createOscillator();
-      const gain2 = this.ctx.createGain();
-      osc2.type = "sawtooth";
-      osc2.frequency.setValueAtTime(880, now + 0.25);
-      osc2.frequency.linearRampToValueAtTime(440, now + 0.45);
-      gain2.gain.setValueAtTime(0.15, now + 0.25);
-      gain2.gain.linearRampToValueAtTime(0.001, now + 0.5);
-      osc2.connect(gain2);
-      gain2.connect(this.ctx.destination);
-      osc2.start(now + 0.25);
-      osc2.stop(now + 0.5);
-    } catch {
-      // safe fallback
-    }
+    this.playSirenTone();
   }
 
-  // Alias for playAlarm
   playSiren() {
-    try {
-      this.playAlarm();
-    } catch {
-      // safe fallback
-    }
+    this.startSiren();
   }
 
   // Start continuous emergency siren loop for active disasters
   startSiren() {
-    if (this.muted || this.isSirenPlaying) return;
     this.isSirenPlaying = true;
-    this.playAlarm();
-    this.sirenInterval = setInterval(() => {
-      if (this.muted || !this.isSirenPlaying) {
-        this.stopSiren();
-        return;
-      }
-      this.playAlarm();
-    }, 800);
+    this.ensureAudio().then(() => {
+      this.playSirenTone();
+      if (this.sirenTimer) clearInterval(this.sirenTimer);
+      this.sirenTimer = setInterval(() => {
+        if (this.muted || !this.isSirenPlaying) {
+          this.stopSiren();
+          return;
+        }
+        this.playSirenTone();
+      }, 800);
+    });
   }
 
   // Stop emergency siren loop
   stopSiren() {
     this.isSirenPlaying = false;
-    if (this.sirenInterval) {
-      clearInterval(this.sirenInterval);
-      this.sirenInterval = null;
+    if (this.sirenTimer) {
+      clearInterval(this.sirenTimer);
+      this.sirenTimer = null;
     }
+    this.stopSirenNodes();
   }
 
   // Confirmation chime for successful sync or mitigation
   playSuccess() {
     if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
+    this.ensureAudio().then((ready) => {
+      if (!ready || !this.ctx) return;
+      try {
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 chord
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
 
-    try {
-      const now = this.ctx.currentTime;
-      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 chord
-      notes.forEach((freq, idx) => {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
 
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.08, now + idx * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.28);
 
-        gain.gain.setValueAtTime(0.06, now + idx * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(now + idx * 0.08);
-        osc.stop(now + idx * 0.08 + 0.25);
-      });
-    } catch {
-      // safe fallback
-    }
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.28);
+        });
+      } catch {
+        // safe fallback
+      }
+    });
   }
 }
 
 export const soundEngine = new SoundEngine();
 export default soundEngine;
+

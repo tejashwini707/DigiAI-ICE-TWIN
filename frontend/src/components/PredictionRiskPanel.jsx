@@ -64,6 +64,7 @@ export default function PredictionRiskPanel({
   const handleScenarioClick = async (disasterType) => {
     setInjecting(true);
     try {
+      await soundEngine.ensureAudio();
       if (onTriggerDisaster) {
         await onTriggerDisaster(disasterType);
       }
@@ -75,6 +76,7 @@ export default function PredictionRiskPanel({
   const handleResetClick = async () => {
     setInjecting(true);
     try {
+      soundEngine.stopSiren();
       if (onResetNominal) {
         await onResetNominal();
       }

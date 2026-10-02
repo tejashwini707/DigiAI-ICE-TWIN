@@ -141,7 +141,8 @@ export default function SimulatorLab() {
   const isWarning = prediction?.status === "warning" || ((prediction?.riskScore || 0) >= 30 && (prediction?.riskScore || 0) < 75);
 
   const toggleDisaster = async (disasterType) => {
-    soundEngine.playSiren();
+    await soundEngine.ensureAudio();
+    soundEngine.startSiren();
     let updated;
     if (activeDisasters.includes(disasterType)) {
       updated = activeDisasters.filter((d) => d !== disasterType);
@@ -155,9 +156,16 @@ export default function SimulatorLab() {
       localStorage.setItem(`digi_ai_disasters_${stationCode}`, JSON.stringify(updated));
       setNotice(`🚨 Disaster Injected: [${updated.map((d) => d.toUpperCase()).join(" + ")}] active in ${stationCode}. Check live telemetry and AI risk below.`);
     } else {
+      soundEngine.stopSiren();
       localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
       setNotice(`✅ All emergency parameters reset to nominal stability for ${stationCode}.`);
     }
+
+    window.dispatchEvent(
+      new CustomEvent("digi_ai_disaster_update", {
+        detail: { stationCode, disasters: updated },
+      })
+    );
 
     try {
       await write({
@@ -172,10 +180,18 @@ export default function SimulatorLab() {
   };
 
   const resolveDisaster = async () => {
+    soundEngine.stopSiren();
     soundEngine.playSuccess();
     setActiveDisasters([]);
     setMitigationApplied(null);
     localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
+
+    window.dispatchEvent(
+      new CustomEvent("digi_ai_disaster_update", {
+        detail: { stationCode, disasters: [] },
+      })
+    );
+
     setNotice(`✅ All emergency parameters reset to nominal stability for ${stationCode}.`);
 
     try {
