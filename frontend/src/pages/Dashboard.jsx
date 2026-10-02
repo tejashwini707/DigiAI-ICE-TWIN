@@ -610,8 +610,11 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Satellite Connectivity Bar */}
-      <ConnectivityBar />
+      {/* Critical Alert Banner - High Priority at top of mission dashboard */}
+      <CriticalAlertBanner
+        prediction={prediction}
+        onExecuteMitigation={handleExecuteMitigation}
+      />
 
       {/* Action Notification Toast */}
       {actionNotice && (
@@ -626,11 +629,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Critical Alert Banner */}
-      <CriticalAlertBanner
-        prediction={prediction}
-        onExecuteMitigation={handleExecuteMitigation}
-      />
+      {/* Satellite Connectivity Bar */}
+      <ConnectivityBar />
 
       {/* Mobile Category Navigation Pill Bar */}
       {!wallMode && (
