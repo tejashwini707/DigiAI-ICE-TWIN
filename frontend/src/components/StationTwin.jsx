@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Cpu, Eye, Radio, Shield, AlertCircle, Info, Sparkles } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Cpu, Eye, Radio, Shield, AlertCircle, Info, Sparkles, Flame, EyeOff } from "lucide-react";
 
 const STATUS_COLOR = {
   nominal: "#4ADE80",
@@ -9,15 +9,15 @@ const STATUS_COLOR = {
 };
 
 const LAYOUT = {
-  "power-plant":     { x: 35,  y: 50,  w: 140, h: 90,  shape: "rect", icon: "⚡", label: "Power Plant", subtitle: "Grid Bus & Inverters" },
-  "generator-shed":  { x: 35,  y: 170, w: 140, h: 80,  shape: "rect", icon: "⚙", label: "GenSet Cluster", subtitle: "Diesel Units #1-#3" },
-  "fuel-depot":      { x: 35,  y: 275, w: 140, h: 80,  shape: "rect", icon: "⛽", label: "Fuel Storage", subtitle: "Polar Grade Bulk" },
-  "living-quarters": { x: 215, y: 50,  w: 180, h: 120, shape: "rect", icon: "🏠", label: "Living Habitat", subtitle: "Berths, Mess & Life Support" },
-  "research-lab":    { x: 215, y: 195, w: 180, h: 85,  shape: "rect", icon: "🔬", label: "Research Lab", subtitle: "Atmospheric & Ice Cores" },
-  "medical-bay":     { x: 215, y: 305, w: 180, h: 75,  shape: "rect", icon: "✚", label: "Medical Bay", subtitle: "Surgical & Telemedicine" },
-  "comms-tower":     { x: 440, y: 40,  w: 70,  h: 70,  shape: "circle", icon: "📡", label: "SATCOM Tower", subtitle: "GSAT Array & Uplink" },
-  "supply-storage":  { x: 430, y: 145, w: 155, h: 100, shape: "rect", icon: "📦", label: "Cryo Warehouse", subtitle: "Rations & Spares Depot" },
-  "water-plant":     { x: 430, y: 275, w: 155, h: 95,  shape: "rect", icon: "💧", label: "Water Plant", subtitle: "Lake Melt Intake & RO" },
+  "power-plant":     { x: 35,  y: 50,  w: 140, h: 90,  shape: "rect", icon: "⚡", label: "Power Plant", subtitle: "Grid Bus & Inverters", temp: "22°C" },
+  "generator-shed":  { x: 35,  y: 170, w: 140, h: 80,  shape: "rect", icon: "⚙", label: "GenSet Cluster", subtitle: "Diesel Units #1-#3", temp: "68°C" },
+  "fuel-depot":      { x: 35,  y: 275, w: 140, h: 80,  shape: "rect", icon: "⛽", label: "Fuel Storage", subtitle: "Polar Grade Bulk", temp: "-12°C" },
+  "living-quarters": { x: 215, y: 50,  w: 180, h: 120, shape: "rect", icon: "🏠", label: "Living Habitat", subtitle: "Berths, Mess & Life Support", temp: "20°C" },
+  "research-lab":    { x: 215, y: 195, w: 180, h: 85,  shape: "rect", icon: "🔬", label: "Research Lab", subtitle: "Atmospheric & Ice Cores", temp: "18°C" },
+  "medical-bay":     { x: 215, y: 305, w: 180, h: 75,  shape: "rect", icon: "✚", label: "Medical Bay", subtitle: "Surgical & Telemedicine", temp: "22°C" },
+  "comms-tower":     { x: 440, y: 40,  w: 70,  h: 70,  shape: "circle", icon: "📡", label: "SATCOM Tower", subtitle: "GSAT Array & Uplink", temp: "-28°C" },
+  "supply-storage":  { x: 430, y: 145, w: 155, h: 100, shape: "rect", icon: "📦", label: "Cryo Warehouse", subtitle: "Rations & Spares Depot", temp: "-18°C" },
+  "water-plant":     { x: 430, y: 275, w: 155, h: 95,  shape: "rect", icon: "💧", label: "Water Plant", subtitle: "Lake Melt Intake & RO", temp: "4°C" },
 };
 
 const DEFAULT_ZONES = [
@@ -32,7 +32,7 @@ const DEFAULT_ZONES = [
   { zoneId: "water-plant", label: "Water Treatment & Melt Intake", type: "water", status: "nominal" },
 ];
 
-function ZoneShape({ zone, layout, onSelect, selected }) {
+function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
   const status = zone?.status || "nominal";
   const color = STATUS_COLOR[status] || STATUS_COLOR.nominal;
   const isCircle = layout.shape === "circle";
@@ -41,6 +41,14 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
   const isSelected = selected === zone.zoneId;
   const isCritical = status === "critical";
   const isWarning = status === "warning";
+
+  // FLIR Thermal Color Fill
+  const flirFill =
+    layout.zoneId === "generator-shed"
+      ? "rgba(239, 68, 68, 0.45)"
+      : layout.temp?.includes("-")
+      ? "rgba(59, 130, 246, 0.45)"
+      : "rgba(245, 158, 11, 0.4)";
 
   return (
     <g
@@ -58,7 +66,7 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
             cx={cx}
             cy={cy}
             r={layout.w / 2}
-            fill="var(--bg-panel-raised)"
+            fill={flirMode ? flirFill : "var(--bg-panel-raised)"}
             stroke={color}
             strokeWidth={isSelected ? 3 : 1.8}
             className="group-hover:stroke-[var(--ice-cyan)] transition"
@@ -86,7 +94,7 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
             width={layout.w}
             height={layout.h}
             rx={8}
-            fill="var(--bg-panel-raised)"
+            fill={flirMode ? flirFill : "var(--bg-panel-raised)"}
             stroke={color}
             strokeWidth={isSelected ? 3 : 1.8}
             className="group-hover:stroke-[var(--ice-cyan)] transition"
@@ -129,7 +137,7 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
         {zone.label || layout.label}
       </text>
 
-      {/* Subtitle */}
+      {/* Subtitle / Thermal Reading */}
       {!isCircle && (
         <text
           x={cx}
@@ -137,9 +145,10 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
           textAnchor="middle"
           fontSize="8.5"
           fontFamily="var(--font-mono)"
-          fill="var(--text-tertiary)"
+          fill={flirMode ? "var(--ice-cyan)" : "var(--text-tertiary)"}
+          fontWeight={flirMode ? "bold" : "normal"}
         >
-          {layout.subtitle}
+          {flirMode ? `FLIR Temp: ${layout.temp}` : layout.subtitle}
         </text>
       )}
 
@@ -160,6 +169,8 @@ function ZoneShape({ zone, layout, onSelect, selected }) {
 }
 
 export default function StationTwin({ station, isOffline, selectedZone, onSelectZone }) {
+  const [flirMode, setFlirMode] = useState(false);
+
   const zones = useMemo(() => {
     if (station?.zones && station.zones.length > 0) return station.zones;
     return DEFAULT_ZONES;
@@ -182,7 +193,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--ice-cyan)] bg-[var(--bg-panel-raised)] px-2 py-0.5 rounded border border-[var(--ice-cyan-dim)]">
-                Live 2D Physics Schematic
+                Live 2D Physics Schematic &amp; FLIR Thermal Twin
               </span>
               <h3 className="font-display text-base sm:text-lg font-semibold text-[var(--text-primary)]">
                 {stationName} Digital Twin Schematic
@@ -193,17 +204,32 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
             </p>
           </div>
 
-          {/* Real-Time Connectivity & Synchronization State */}
-          <div className="flex items-center gap-2.5 font-mono text-xs">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${isOffline ? "bg-cyan-400 animate-pulse" : "bg-emerald-400 animate-ping"}`}
-            />
-            <span
-              className="font-bold tracking-wide"
-              style={{ color: isOffline ? "var(--ice-cyan)" : "var(--status-nominal)" }}
+          {/* FLIR IR Heatmap Toggle & Connectivity State */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setFlirMode((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold transition cursor-pointer ${
+                flirMode
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm"
+                  : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
+              title="Toggle FLIR Infra-Red Thermal Heatmap View Mode"
             >
-              {isOffline ? "AUTONOMOUS EDGE TWIN (LIVE LOCAL STREAM)" : "LIVE TWIN STREAMING"}
-            </span>
+              <Flame className={`w-3.5 h-3.5 ${flirMode ? "text-amber-400 animate-pulse" : ""}`} />
+              <span>{flirMode ? "FLIR Thermal: ON" : "FLIR Thermal: OFF"}</span>
+            </button>
+
+            <div className="flex items-center gap-2.5 font-mono text-xs">
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${isOffline ? "bg-cyan-400 animate-pulse" : "bg-emerald-400 animate-ping"}`}
+              />
+              <span
+                className="font-bold tracking-wide hidden sm:inline"
+                style={{ color: isOffline ? "var(--ice-cyan)" : "var(--status-nominal)" }}
+              >
+                {isOffline ? "AUTONOMOUS EDGE TWIN" : "LIVE STREAMING"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -255,10 +281,19 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                   layout={layout}
                   onSelect={onSelectZone}
                   selected={selectedZone}
+                  flirMode={flirMode}
                 />
               );
             })}
           </svg>
+
+          {/* FLIR Thermal Overlay Indicator */}
+          {flirMode && (
+            <div className="absolute top-3 right-3 bg-amber-950/80 border border-amber-500 px-3 py-1 rounded-lg text-amber-300 font-mono text-[10px] font-bold flex items-center gap-1.5 shadow-lg animate-pulse">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>FLIR IR HEATMAP DISSIPATION VIEW</span>
+            </div>
+          )}
 
           {/* Blizzard atmospheric snow effect if blizzard disaster active */}
           {isBlizzard && (
@@ -295,4 +330,3 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
     </div>
   );
 }
-

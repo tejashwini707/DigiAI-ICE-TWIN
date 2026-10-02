@@ -181,4 +181,37 @@ export async function ingestTelemetry(req, res) {
   }
 }
 
+// Real Hardware / IoT MQTT Field Gateway Ingestion Endpoint
+export async function ingestMqttTelemetry(req, res) {
+  try {
+    const { stationCode = "MAITRI", zoneId = "power-plant", metric = "power_load_kw", value, deviceId } = req.body || {};
+    const code = stationCode.toUpperCase();
+    const numericValue = typeof value === "number" ? value : parseFloat(value) || 0;
+
+    const doc = {
+      stationCode: code,
+      zoneId,
+      metric,
+      value: numericValue,
+      deviceId: deviceId || "iot-field-gateway-01",
+      recordedAt: new Date(),
+      syncedFromOffline: false,
+    };
+
+    dataStore.pushTelemetry(code, [doc]);
+
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      try {
+        await Telemetry.create(doc);
+      } catch (err) {
+        console.warn("MQTT DB insert notice:", err.message);
+      }
+    }
+
+    res.status(201).json({ status: "success", ingested: doc });
+  } catch (err) {
+    res.status(500).json({ error: "IoT MQTT Ingestion Error", message: err.message });
+  }
+}
+
 
