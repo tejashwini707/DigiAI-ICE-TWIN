@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useConnectivity } from "../context/ConnectivityContext.jsx";
-import { Activity, ShieldCheck, CheckCircle2, AlertOctagon } from "lucide-react";
+import { Activity, ShieldCheck, Heart, AlertOctagon } from "lucide-react";
+import soundEngine from "../services/soundEngine.js";
 
 const HEALTH_COLOR = {
   fit: "var(--status-nominal)",
@@ -19,7 +20,7 @@ export default function PersonnelPanel({ personnel = [], onRefresh, onLocalSOSIn
     const isCurrentlyCritical = currentStatus === "critical";
 
     if (isCurrentlyCritical) {
-      // Deactivate / Reset active SOS back to nominal fit status
+      soundEngine.playSuccess();
       setLocalStatuses((prev) => ({ ...prev, [person._id]: "fit" }));
 
       const standDownIncident = {
@@ -47,7 +48,7 @@ export default function PersonnelPanel({ personnel = [], onRefresh, onLocalSOSIn
       setPendingId(null);
       if (!result.queued) onRefresh?.();
     } else {
-      // Trigger emergency SOS beacon
+      soundEngine.playAlarm();
       setLocalStatuses((prev) => ({ ...prev, [person._id]: "critical" }));
 
       const sosIncident = {
@@ -81,8 +82,8 @@ export default function PersonnelPanel({ personnel = [], onRefresh, onLocalSOSIn
     <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-panel)] p-5 space-y-4 shadow-xl">
       <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <h3 className="font-display text-sm font-semibold tracking-wide text-[var(--text-primary)] uppercase flex items-center gap-2">
-          <Activity className="w-4 h-4 text-[var(--ice-cyan)]" />
-          Crew &amp; Expedition Roster
+          <Activity className="w-4 h-4 text-[var(--ice-cyan)] animate-pulse" />
+          Crew Biometrics &amp; Expedition Roster
         </h3>
         <span className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase">
           {personnel.length} On-Site
@@ -97,7 +98,7 @@ export default function PersonnelPanel({ personnel = [], onRefresh, onLocalSOSIn
           return (
             <div
               key={p._id}
-              className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all ${
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
                 isCritical
                   ? "bg-red-950/40 border-red-500/60 shadow-md ring-1 ring-red-500/30"
                   : "bg-[var(--bg-panel-raised)] border-[var(--border-subtle)] hover:border-[var(--ice-cyan-dim)]"
@@ -121,10 +122,23 @@ export default function PersonnelPanel({ personnel = [], onRefresh, onLocalSOSIn
                 </div>
               </div>
 
+              {/* Animated Mini ECG Pulse Waveform */}
+              <div className="hidden md:flex items-center px-2 py-1 rounded bg-[var(--bg-deep)] border border-[var(--border-subtle)] opacity-80">
+                <svg viewBox="0 0 60 20" className="w-14 h-4">
+                  <path
+                    d="M 0 10 L 15 10 L 20 2 L 25 18 L 30 7 L 35 12 L 40 10 L 60 10"
+                    fill="none"
+                    stroke={isCritical ? "#FF5D5D" : "var(--ice-cyan)"}
+                    strokeWidth="1.5"
+                    className="animate-pulse"
+                  />
+                </svg>
+              </div>
+
               <button
                 onClick={() => handleToggleSOS(p)}
                 disabled={pendingId === p._id}
-                className={`shrink-0 text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer disabled:opacity-50 ${
+                className={`shrink-0 text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer disabled:opacity-50 ${
                   isCritical
                     ? "bg-red-500/30 text-red-200 border-red-500/70 hover:bg-emerald-500/20 hover:text-emerald-300 hover:border-emerald-500/50"
                     : "border-red-500/40 text-red-400 hover:bg-red-500/20"

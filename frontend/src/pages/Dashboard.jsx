@@ -5,13 +5,14 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useConnectivity } from "../context/ConnectivityContext.jsx";
 import StationTwin from "../components/StationTwin.jsx";
 import ConnectivityBar from "../components/ConnectivityBar.jsx";
-import DisasterSimulatorBar from "../components/DisasterSimulatorBar.jsx";
 import ResourcePanel from "../components/ResourcePanel.jsx";
 import TelemetryPanel from "../components/TelemetryPanel.jsx";
 import PersonnelPanel from "../components/PersonnelPanel.jsx";
 import IncidentLog from "../components/IncidentLog.jsx";
 import PredictionRiskPanel from "../components/PredictionRiskPanel.jsx";
 import CriticalAlertBanner from "../components/CriticalAlertBanner.jsx";
+import SatelliteTracker from "../components/SatelliteTracker.jsx";
+import soundEngine from "../services/soundEngine.js";
 import {
   DEFAULT_STATIONS,
   generateDefaultTelemetry,
@@ -20,19 +21,18 @@ import {
   DEFAULT_PERSONNEL,
   DEFAULT_INCIDENTS,
 } from "../services/dataDefaults.js";
-import { generateOfflineTick, evaluateOfflineRisk } from "../offline/edgePredictor.js";
+import { generateOfflineTick } from "../offline/edgePredictor.js";
 import {
   Globe,
   Clock,
-  ShieldCheck,
   RefreshCw,
   X,
   Radio,
   BarChart3,
   FlaskConical,
-  Activity,
-  Layers,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 const STATIONS = [
@@ -45,7 +45,6 @@ export default function Dashboard() {
   const { isOffline, write, addSyncListener } = useConnectivity();
   const [stationCode, setStationCode] = useState(user?.stationCode || "MAITRI");
 
-  // Initialize with rich defaults immediately so twin & telemetry are never blank
   const [twin, setTwin] = useState(() => ({
     station: DEFAULT_STATIONS[user?.stationCode || "MAITRI"] || DEFAULT_STATIONS.MAITRI,
     telemetry: generateDefaultTelemetry(user?.stationCode || "MAITRI"),
@@ -60,6 +59,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [actionNotice, setActionNotice] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [muted, setMuted] = useState(false);
+
+  // Toggle Sound FX
+  const handleToggleSound = () => {
+    const nextState = !muted;
+    setMuted(nextState);
+    soundEngine.setMuted(nextState);
+    if (!nextState) soundEngine.playPing();
+  };
 
   // Clock ticker
   useEffect(() => {
@@ -117,6 +125,7 @@ export default function Dashboard() {
   // Subscribe to sync completions from ConnectivityContext
   useEffect(() => {
     const unsub = addSyncListener(() => {
+      soundEngine.playSuccess();
       loadAll();
     });
     return unsub;
@@ -137,7 +146,6 @@ export default function Dashboard() {
         if (!prev) return prev;
         const result = generateOfflineTick(prev.station, prev.telemetry);
         setPrediction(result.prediction);
-        // Queue readings to IndexedDB in background
         if (result.flatReadings.length > 0) {
           write({
             type: "telemetry",
@@ -158,8 +166,9 @@ export default function Dashboard() {
     return () => clearInterval(edgeInterval);
   }, [isOffline, stationCode, write]);
 
-  // Trigger Crisis / Disaster Scenario (supports multiple simultaneous disasters)
+  // Trigger Disaster Scenario with audio alert
   const handleTriggerDisaster = async (disasterType) => {
+    soundEngine.playAlarm();
     const disasterTitles = {
       battery_drain: "🚨 CRITICAL: Inverter Overload & High Battery Drain Rate",
       generator_failure: "🚨 CRITICAL: Primary Diesel Generator #1 Mechanical Stall",
@@ -188,7 +197,6 @@ export default function Dashboard() {
       createdAt: new Date(),
     };
 
-    // Optimistically update local twin & incidents
     setIncidents((prev) => [newIncident, ...prev]);
 
     setTwin((prev) => {
@@ -215,7 +223,6 @@ export default function Dashboard() {
     );
     setTimeout(() => setActionNotice(null), 5000);
 
-    // Queue action or post online
     await write({
       type: "station_disaster",
       method: "POST",
@@ -224,38 +231,10 @@ export default function Dashboard() {
     });
   };
 
-  const handleTriggerMultiDisasters = async (disasterList) => {
-    setTwin((prev) => {
-      const updatedStation = {
-        ...prev.station,
-        activeDisaster: disasterList[0] || null,
-        activeDisasters: disasterList,
-        mitigationApplied: null,
-      };
-      const result = generateOfflineTick(updatedStation, prev.telemetry);
-      setPrediction(result.prediction);
-      return {
-        ...prev,
-        station: result.station,
-        telemetry: result.telemetryByZone,
-        prediction: result.prediction,
-      };
-    });
-
-    setActionNotice(`🚨 Multi-Disaster Scenario Injected: [${disasterList.join(" + ")}]`);
-    setTimeout(() => setActionNotice(null), 5000);
-
-    await write({
-      type: "station_disaster",
-      method: "POST",
-      url: `/stations/${stationCode}/disaster`,
-      body: { activeDisasters: disasterList },
-    });
-  };
-
-  // Mitigation SOP Execution Handler (works both online and in offline edge mode)
+  // Mitigation SOP Execution Handler with success chime
   const handleExecuteMitigation = async (rec) => {
     try {
+      soundEngine.playSuccess();
       if (rec.action === "resolve_disaster") {
         await handleResolveDisaster();
         return;
@@ -274,7 +253,6 @@ export default function Dashboard() {
         createdAt: new Date(),
       };
 
-      // Optimistically apply mitigation locally
       setIncidents((prev) => [mitigationIncident, ...prev]);
 
       setTwin((prev) => {
@@ -295,7 +273,6 @@ export default function Dashboard() {
       setActionNotice(`✅ Mitigation Protocol [${protocol}] executed. Station safety buffer stabilized.`);
       setTimeout(() => setActionNotice(null), 5000);
 
-      // Write through context queue or direct API
       await write({
         type: "station_mitigation",
         method: "POST",
@@ -307,9 +284,10 @@ export default function Dashboard() {
     }
   };
 
-  // Resolve / Reset Disaster (works both online and in offline edge mode)
+  // Resolve / Reset Disaster
   const handleResolveDisaster = async () => {
     try {
+      soundEngine.playSuccess();
       const resolvedIncident = {
         _id: `inc-res-${Date.now()}`,
         stationCode,
@@ -362,7 +340,6 @@ export default function Dashboard() {
 
   const selectedZoneData = twin?.station?.zones?.find((z) => z.zoneId === selectedZone);
 
-  // De-duplicate readings by metric for the selected zone drilldown
   const uniqueZoneReadings = useMemo(() => {
     if (!selectedZone || !twin?.telemetry) return [];
     const raw = twin.telemetry[selectedZone] || [];
@@ -375,13 +352,11 @@ export default function Dashboard() {
     return Object.values(byMetric);
   }, [selectedZone, twin]);
 
-  const activeDisastersList = twin?.station?.activeDisasters || (twin?.station?.activeDisaster ? [twin?.station?.activeDisaster] : []);
-
   return (
     <div className="min-h-screen px-4 sm:px-8 py-6 max-w-7xl mx-auto space-y-6">
       {/* Centered Big Bold Mission Control Header */}
       <header className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] shadow-2xl relative space-y-4">
-        {/* Top Utility Row: Brand Icon, Nav Links, Station Switcher & User Profile */}
+        {/* Top Utility Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] shadow-inner">
@@ -397,8 +372,22 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Navigation, Station Switcher & User Controls */}
+          {/* Navigation, Station Switcher, Sound & User Controls */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Audio Feedback Toggle */}
+            <button
+              onClick={handleToggleSound}
+              className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1 text-xs font-mono font-semibold ${
+                muted
+                  ? "bg-red-950/30 border-red-500/40 text-red-400"
+                  : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--ice-cyan)] hover:border-[var(--ice-cyan)]"
+              }`}
+              title={muted ? "Unmute Mission Control Sound Effects" : "Mute Sound FX"}
+            >
+              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              <span className="hidden sm:inline">{muted ? "Muted" : "Audio On"}</span>
+            </button>
+
             {/* Historical Reports Navigation */}
             <Link
               to="/analytics"
@@ -409,7 +398,7 @@ export default function Dashboard() {
               <span>Reports</span>
             </Link>
 
-            {/* Discrete Scenario Injector Lab Button */}
+            {/* Scenario Lab Button */}
             <Link
               to="/simulator"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-950/30 hover:bg-amber-950/60 text-amber-300 text-xs font-mono font-semibold transition cursor-pointer shadow-sm"
@@ -486,7 +475,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Critical Alert Banner with Audio Chime & Fast SOP Mitigation */}
+      {/* Critical Alert Banner */}
       <CriticalAlertBanner
         prediction={prediction}
         onExecuteMitigation={handleExecuteMitigation}
@@ -501,7 +490,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main 2-Column Left Area: Digital Twin, Telemetry, and Prediction Engine */}
+          {/* Main 2-Column Left Area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Live 2D Schematic Digital Twin */}
             <StationTwin
@@ -511,7 +500,7 @@ export default function Dashboard() {
               onSelectZone={(z) => setSelectedZone(z === selectedZone ? null : z)}
             />
 
-            {/* Selected Zone Inspection Modal / Drawer with DE-DUPLICATED diagnostic rows */}
+            {/* Selected Zone Inspection Modal */}
             {selectedZone && selectedZoneData && (
               <div className="rounded-2xl border border-[var(--ice-cyan-dim)] bg-[var(--bg-panel)] p-5 space-y-3 shadow-2xl relative animate-fadeIn">
                 <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2.5">
@@ -574,8 +563,9 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Right Column: Logistics & Crew Panels */}
+          {/* Right Column: Satellite Radar, Logistics & Crew Panels */}
           <div className="space-y-6">
+            <SatelliteTracker isOffline={isOffline} />
             <ResourcePanel resources={resources} />
             <PersonnelPanel personnel={personnel} onRefresh={loadAll} onLocalSOSIncident={handleLocalIncidentAdded} />
           </div>
