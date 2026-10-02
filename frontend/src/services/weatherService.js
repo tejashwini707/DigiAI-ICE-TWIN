@@ -15,12 +15,6 @@ const STATION_COORDINATES = {
     region: "Larsemann Hills, East Antarctica",
     name: "Bharati Station",
   },
-  DAKSHIN_GANGOTRI: {
-    lat: -70.0833,
-    lng: 12.0000,
-    region: "Princess Astrid Coast, Ice Shelf",
-    name: "Dakshin Gangotri Post",
-  },
 };
 
 const weatherCache = {};

@@ -56,7 +56,6 @@ import {
 const STATIONS = [
   { code: "MAITRI", label: "Maitri (70°S)", fullLabel: "Maitri Station (70°S)", region: "Schirmacher Oasis" },
   { code: "BHARATI", label: "Bharati (69°S)", fullLabel: "Bharati Station (69°S)", region: "Larsemann Hills" },
-  { code: "DAKSHIN_GANGOTRI", label: "D. Gangotri (70°S)", fullLabel: "Dakshin Gangotri Post (70°S)", region: "Ice Shelf" },
 ];
 
 const MOBILE_VIEWS = [
@@ -241,7 +240,7 @@ export default function Dashboard() {
 
       setIncidents((prev) => [mitigationIncident, ...prev]);
 
-      const result = await write({
+      await write({
         type: "incident",
         method: "POST",
         url: `/incidents/${stationCode}`,
@@ -253,11 +252,12 @@ export default function Dashboard() {
         },
       });
 
-      if (!isOffline) {
-        try {
-          await api.post(`/stations/${stationCode}/mitigate`, { protocol });
-        } catch (e) {}
-      }
+      await write({
+        type: "station_mitigate",
+        method: "POST",
+        url: `/stations/${stationCode}/apply-mitigation`,
+        body: { mitigationAction: protocol },
+      });
 
       setActionNotice(`Executed SOP Protocol: ${rec.label || protocol}. Risk reduced by ${rec.riskDelta || "-15%"}.`);
       setTimeout(() => setActionNotice(null), 5000);
@@ -271,15 +271,15 @@ export default function Dashboard() {
     try {
       soundEngine.playSuccess();
       const res = await write({
-        type: "action",
+        type: "station_resolve",
         method: "POST",
-        url: "/simulator/resolve",
-        body: { stationCode },
+        url: `/stations/${stationCode}/resolve-disaster`,
+        body: {},
       });
       if (res.queued) {
         setTwin((prev) => ({
           ...prev,
-          station: { ...prev.station, activeDisaster: null },
+          station: { ...prev.station, activeDisaster: null, activeDisasters: [] },
         }));
       }
       setActionNotice("All station alarms cleared. Power grid nominal.");
@@ -300,14 +300,14 @@ export default function Dashboard() {
   const localStationString = localStationDate.toUTCString().slice(17, 25);
 
   return (
-    <div className={`min-h-screen text-[var(--text-primary)] transition-all ${wallMode ? "p-3 sm:p-4 tv-mode-grid bg-[#04070D]" : "p-3 sm:p-6 lg:p-8 space-y-5 sm:space-y-6"}`}>
+    <div className={`min-h-screen text-[var(--text-primary)] transition-all ${wallMode ? "p-3 sm:p-4 tv-mode-grid bg-[#06080F]" : "p-3 sm:p-6 lg:p-8 space-y-5 sm:space-y-6"}`}>
       {/* Top Mission Header */}
       {!wallMode && (
         <header className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
             {/* Live Clock & Mission Info */}
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] shadow-md">
+              <div className="p-2.5 rounded-xl ice-pane frost-border text-[var(--aurora-teal)] shadow-lg shadow-teal-500/10">
                 <Globe className="w-5 h-5 animate-pulse" />
               </div>
               <div>
@@ -316,21 +316,21 @@ export default function Dashboard() {
                     UTC: {utcString}
                   </span>
                   <span className="text-[var(--text-tertiary)]">|</span>
-                  <span className="font-mono text-xs font-semibold text-[var(--ice-cyan)] tracking-wider uppercase">
+                  <span className="font-mono text-xs font-semibold text-[var(--aurora-teal)] tracking-wider uppercase">
                     Station: {localStationString} (UTC{antarcticaOffsetHours >= 0 ? `+${antarcticaOffsetHours}` : antarcticaOffsetHours})
                   </span>
                 </div>
                 <p className="font-mono text-[10px] text-[var(--text-tertiary)]">
-                  Autonomous Antarctic Operations &amp; Digital Twin
+                  Autonomous Antarctic Operations &amp; Digital Twin · Aurora Polar Night
                 </p>
               </div>
             </div>
 
             {/* Live Real-World Antarctic Weather Feed Pill */}
             {liveWeather && (
-              <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs font-mono">
+              <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-xl ice-pane frost-border text-xs font-mono">
                 <div className="flex items-center gap-1.5 text-cyan-300">
-                  <Thermometer className="w-3.5 h-3.5 text-[var(--ice-cyan)]" />
+                  <Thermometer className="w-3.5 h-3.5 text-[var(--aurora-teal)]" />
                   <span className="font-bold">{liveWeather.temperatureC}°C</span>
                 </div>
                 <span className="text-[var(--text-tertiary)]">•</span>
@@ -338,7 +338,7 @@ export default function Dashboard() {
                   <Wind className="w-3.5 h-3.5 text-amber-400" />
                   <span>{liveWeather.windSpeedKmh} km/h</span>
                 </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-[var(--aurora-teal)] border border-emerald-500/30">
                   ECMWF Live
                 </span>
               </div>
@@ -352,17 +352,17 @@ export default function Dashboard() {
                 className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1 text-xs font-mono font-semibold shrink-0 ${
                   muted
                     ? "bg-red-950/30 border-red-500/40 text-red-400"
-                    : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--ice-cyan)] hover:border-[var(--ice-cyan)]"
+                    : "ice-pane frost-border text-[var(--aurora-teal)] hover:border-[var(--aurora-teal)]"
                 }`}
                 title={muted ? "Unmute Mission Control Sound Effects" : "Mute Sound FX"}
               >
-                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[var(--aurora-teal)]" />}
               </button>
 
               {/* SITREP Daily Report Modal Button */}
               <button
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--ice-cyan)]/40 bg-[var(--bg-deep)] hover:bg-[var(--bg-panel-raised)] text-xs font-semibold text-[var(--ice-cyan)] transition cursor-pointer shrink-0 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--aurora-teal)]/40 ice-pane hover:bg-[var(--bg-panel-raised)] text-xs font-semibold text-[var(--aurora-teal)] transition cursor-pointer shrink-0 shadow-sm"
                 title="Generate Official MoES Daily Situational Ops Report (SITREP)"
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export default function Dashboard() {
               {/* Mission Control Wall / TV Mode Toggle */}
               <button
                 onClick={() => setWallMode(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cyan-500/40 bg-cyan-950/30 hover:bg-cyan-950/60 text-cyan-300 text-xs font-mono font-semibold transition cursor-pointer shrink-0 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--aurora-cyan)]/40 bg-cyan-950/30 hover:bg-cyan-950/60 text-cyan-300 text-xs font-mono font-semibold transition cursor-pointer shrink-0 shadow-sm"
                 title="Switch to Mission Control Wall / Full-Screen Display Mode"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
@@ -402,13 +402,13 @@ export default function Dashboard() {
               {/* Historical Reports Navigation */}
               <Link
                 to="/analytics"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] hover:border-[var(--ice-cyan)] text-xs font-semibold text-[var(--text-primary)] hover:text-[var(--ice-cyan)] transition cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-subtle)] ice-pane hover:border-[var(--aurora-teal)] text-xs font-semibold text-[var(--text-primary)] hover:text-[var(--aurora-teal)] transition cursor-pointer shrink-0"
                 title="View Analytics & Tabular Reports"
               >
-                <BarChart3 className="w-3.5 h-3.5 text-[var(--ice-cyan)]" />
+                <BarChart3 className="w-3.5 h-3.5 text-[var(--aurora-teal)]" />
               </Link>
 
-              {/* 3-Station Switcher (Maitri, Bharati, Dakshin Gangotri) */}
+              {/* 2-Station Switcher (Maitri & Bharati) */}
               <div className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-0.5 overflow-hidden shrink-0">
                 {STATIONS.map((s) => (
                   <button
@@ -417,9 +417,9 @@ export default function Dashboard() {
                       setStationCode(s.code);
                       setSelectedZone(null);
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
                       stationCode === s.code
-                        ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] shadow-sm border border-[var(--ice-cyan-dim)]"
+                        ? "bg-[var(--bg-panel-raised)] text-[var(--aurora-teal)] shadow-sm border border-[var(--border-frozen)]"
                         : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     }`}
                   >
@@ -442,7 +442,7 @@ export default function Dashboard() {
           {/* Big Bold Centered Title */}
           <div className="text-center py-1">
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white drop-shadow-xl font-display">
-              <span className="text-[var(--ice-cyan)] font-extrabold">DigiAI ICE TWIN</span>
+              <span className="text-[var(--aurora-teal)] font-extrabold">DigiAI ICE TWIN</span>
               <span className="text-gray-400 font-normal mx-2 sm:mx-3">-</span>
               <span className="text-white font-extrabold">Antarctic Station Intelligence Platform</span>
             </h1>
@@ -455,9 +455,9 @@ export default function Dashboard() {
 
       {/* Wall / TV Display Mode Top Strip */}
       {wallMode && (
-        <div className="flex items-center justify-between border-b border-cyan-500/30 pb-2 mb-3 bg-[var(--bg-panel)]/80 p-3 rounded-xl">
+        <div className="flex items-center justify-between border-b border-[var(--aurora-teal)]/30 pb-2 mb-3 ice-pane p-3 rounded-xl frost-border">
           <div className="flex items-center gap-3">
-            <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+            <span className="w-3 h-3 rounded-full bg-[var(--aurora-teal)] animate-ping" />
             <h2 className="font-display font-bold text-lg text-white tracking-wide">
               MOES MISSION CONTROL WALL DISPLAY · {stationCode} POLAR TWIN
             </h2>
@@ -488,12 +488,12 @@ export default function Dashboard() {
 
       {/* Action Notification Toast */}
       {actionNotice && (
-        <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/80 to-blue-950/80 border border-[var(--ice-cyan)] text-cyan-200 text-xs font-mono flex items-center justify-between animate-fadeIn shadow-lg">
+        <div className="p-3.5 rounded-xl bg-gradient-to-r from-teal-950/80 to-purple-950/80 border border-[var(--aurora-teal)] text-teal-100 text-xs font-mono flex items-center justify-between animate-fadeIn shadow-lg backdrop-blur-md">
           <div className="flex items-center gap-2 min-w-0">
-            <Radio className="w-4 h-4 text-[var(--ice-cyan)] animate-spin shrink-0" />
+            <Radio className="w-4 h-4 text-[var(--aurora-teal)] animate-spin shrink-0" />
             <span className="truncate">{actionNotice}</span>
           </div>
-          <button onClick={() => setActionNotice(null)} className="cursor-pointer text-cyan-300 hover:text-white shrink-0 ml-2">
+          <button onClick={() => setActionNotice(null)} className="cursor-pointer text-teal-300 hover:text-white shrink-0 ml-2">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -517,11 +517,11 @@ export default function Dashboard() {
                 onClick={() => setMobileView(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition cursor-pointer shrink-0 ${
                   isActive
-                    ? "bg-[var(--ice-cyan)] text-black font-bold shadow-md shadow-cyan-500/20"
-                    : "bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
+                    ? "bg-gradient-to-r from-[var(--aurora-teal)] to-[var(--aurora-cyan)] text-black font-bold shadow-md shadow-teal-500/20"
+                    : "ice-pane border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-black" : "text-[var(--ice-cyan)]"}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-black" : "text-[var(--aurora-teal)]"}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -530,8 +530,8 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="p-12 text-center rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] space-y-3">
-          <RefreshCw className="w-8 h-8 text-[var(--ice-cyan)] animate-spin mx-auto" />
+        <div className="p-12 text-center rounded-2xl ice-pane frost-border space-y-3">
+          <RefreshCw className="w-8 h-8 text-[var(--aurora-teal)] animate-spin mx-auto" />
           <p className="text-sm font-mono text-[var(--text-secondary)]">
             Synchronizing Antarctic Digital Twin Telemetry…
           </p>

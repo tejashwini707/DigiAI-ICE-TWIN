@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Layers,
 } from "lucide-react";
+import soundEngine from "../services/soundEngine.js";
 
 const STATIONS = [
   { code: "MAITRI", label: "Maitri Station (70°S)" },
@@ -83,16 +84,20 @@ export default function SimulatorLab() {
 
   // Fetch current station status
   useEffect(() => {
-    api.get(`/stations/${stationCode}/twin`).then((res) => {
-      const station = res.data?.station;
-      const list = station?.activeDisasters || (station?.activeDisaster ? [station.activeDisaster] : []);
-      setActiveDisasters(list);
-      setMitigationApplied(station?.mitigationApplied || null);
-    }).catch(() => {});
+    api
+      .get(`/stations/${stationCode}/twin`)
+      .then((res) => {
+        const station = res.data?.station;
+        const list = station?.activeDisasters || (station?.activeDisaster ? [station.activeDisaster] : []);
+        setActiveDisasters(list);
+        setMitigationApplied(station?.mitigationApplied || null);
+      })
+      .catch(() => {});
   }, [stationCode]);
 
   const toggleDisaster = async (disasterType) => {
     setLoading(true);
+    soundEngine.playSiren();
     try {
       let updated;
       if (activeDisasters.includes(disasterType)) {
@@ -104,8 +109,8 @@ export default function SimulatorLab() {
       setMitigationApplied(null);
       setNotice(
         updated.length > 0
-          ? `🚨 Crisis state updated: [${updated.map((u) => u.toUpperCase()).join(" + ")}] active in ${stationCode}. Return to Mission Control to observe live response.`
-          : `✅ All disasters cleared for ${stationCode}.`
+          ? `🚨 Disaster state updated: [${updated.map((d) => d.toUpperCase()).join(" + ")}] active in ${stationCode}.`
+          : `✅ All emergency parameters cleared for ${stationCode}.`
       );
 
       await write({
@@ -121,33 +126,13 @@ export default function SimulatorLab() {
     }
   };
 
-  const triggerDualDisaster = async () => {
-    setLoading(true);
-    try {
-      const dual = ["comms_blackout", "generator_failure"];
-      setActiveDisasters(dual);
-      setMitigationApplied(null);
-      setNotice(`🚨 DUAL CRISIS INJECTED: [ISRO GSAT-30 SATCOM DROP + DIESEL GENERATOR #1 STALL] simultaneously active in ${stationCode}!`);
-
-      await write({
-        type: "station_disaster",
-        method: "POST",
-        url: `/stations/${stationCode}/disaster`,
-        body: { activeDisasters: dual },
-      });
-    } catch (err) {
-      console.error("Dual disaster trigger failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resolveDisaster = async () => {
     setLoading(true);
+    soundEngine.playSuccess();
     try {
       setActiveDisasters([]);
       setMitigationApplied(null);
-      setNotice(`✅ All emergency parameters reset to nominal for ${stationCode}.`);
+      setNotice(`✅ All emergency parameters reset to nominal stability for ${stationCode}.`);
 
       await write({
         type: "station_resolve",
@@ -165,20 +150,20 @@ export default function SimulatorLab() {
   return (
     <div className="min-h-screen px-4 sm:px-8 py-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] shadow-xl">
+      <header className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl ice-pane frost-border shadow-2xl">
         <div className="flex items-center gap-3.5">
           <Link
             to="/"
-            className="p-2.5 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] hover:border-[var(--ice-cyan-dim)] transition cursor-pointer"
+            className="p-2.5 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] hover:border-[var(--ice-cyan)] transition cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <span className="font-mono text-[10px] tracking-[0.2em] font-bold text-amber-400 uppercase">
+            <span className="font-mono text-[10px] tracking-[0.2em] font-bold text-[var(--aurora-teal)] uppercase">
               SCENARIO INJECTION LAB
             </span>
             <p className="text-xs text-[var(--text-secondary)] font-mono">
-              Polar Disaster Simulation
+              Polar Disaster &amp; Cascade Failure Simulation
             </p>
           </div>
         </div>
@@ -188,7 +173,7 @@ export default function SimulatorLab() {
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white drop-shadow-md">
             <span className="text-[var(--ice-cyan)] font-extrabold">DigiAI ICE TWIN</span>
             <span className="text-gray-400 font-normal mx-2">-</span>
-            <span className="text-white font-bold">Antarctic Intelligence &amp; Digital Twin</span>
+            <span className="text-white font-bold">Polar Testing Console</span>
           </h1>
         </div>
 
@@ -201,7 +186,7 @@ export default function SimulatorLab() {
                 onClick={() => setStationCode(s.code)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-display transition cursor-pointer ${
                   stationCode === s.code
-                    ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
+                    ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] border border-[var(--border-frozen)]"
                     : "text-[var(--text-secondary)] hover:text-white"
                 }`}
               >
@@ -212,7 +197,7 @@ export default function SimulatorLab() {
 
           <Link
             to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-display bg-[var(--ice-cyan)] text-black hover:opacity-90 shadow-lg transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-display bg-gradient-to-r from-[var(--aurora-teal)] to-[var(--aurora-cyan)] text-black hover:opacity-90 shadow-lg shadow-teal-500/20 transition cursor-pointer"
           >
             <span>Live Mission Control</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -222,7 +207,7 @@ export default function SimulatorLab() {
 
       {/* Notice Alert */}
       {notice && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/60 to-red-950/60 border border-amber-500/50 text-amber-200 text-xs font-mono flex items-center justify-between animate-fadeIn shadow-xl">
+        <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/70 to-red-950/70 border border-amber-500/50 text-amber-200 text-xs font-mono flex items-center justify-between animate-fadeIn shadow-xl backdrop-blur-md">
           <span>{notice}</span>
           <button
             onClick={() => setNotice(null)}
@@ -234,7 +219,7 @@ export default function SimulatorLab() {
       )}
 
       {/* Current State Card */}
-      <div className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-panel)] flex flex-wrap items-center justify-between gap-4">
+      <div className="p-5 rounded-2xl ice-pane frost-border flex flex-wrap items-center justify-between gap-4 shadow-xl">
         <div>
           <p className="text-[10px] font-mono uppercase text-[var(--text-tertiary)]">Target Research Station</p>
           <h2 className="font-display text-lg font-bold text-[var(--text-primary)]">
@@ -242,32 +227,22 @@ export default function SimulatorLab() {
           </h2>
           <p className="text-xs text-[var(--text-secondary)] mt-0.5">
             Active Disasters:{" "}
-            <span className="font-mono font-bold" style={{ color: activeDisasters.length > 0 ? "#FF5D5D" : "#4ADE80" }}>
+            <span className="font-mono font-bold" style={{ color: activeDisasters.length > 0 ? "#FF4B4B" : "#00F5A0" }}>
               {activeDisasters.length > 0
                 ? `🚨 [${activeDisasters.map((d) => d.toUpperCase()).join(" + ")}] ACTIVE (${activeDisasters.length})`
-                : "✅ NOMINAL POLAR OPERATIONS"}
+                : "✅ NOMINAL POLAR STABILITY"}
             </span>
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Dual Disaster Quick Trigger */}
-          <button
-            onClick={triggerDualDisaster}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold font-display border border-red-500/50 bg-red-950/30 text-red-300 hover:bg-red-950/60 transition cursor-pointer shadow-md disabled:opacity-50"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>⚡ Inject Dual Disaster: GSAT Drop + Diesel Stall</span>
-          </button>
-
           <button
             onClick={resolveDisaster}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold font-display border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold font-display border border-[var(--aurora-teal)]/50 text-[var(--aurora-teal)] hover:bg-[var(--aurora-teal)]/20 transition cursor-pointer disabled:opacity-50 shadow-md"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Reset All to Nominal Safety</span>
+            <span>Reset Station to Nominal Safety</span>
           </button>
         </div>
       </div>
@@ -276,7 +251,7 @@ export default function SimulatorLab() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-            Toggle Disaster Scenarios (Inject Multiple Simultaneously)
+            Disaster Scenario Matrix (Inject Faults &amp; Test Real AI Engine)
           </h3>
           <span className="text-xs font-mono text-[var(--ice-cyan)]">
             {activeDisasters.length} active
@@ -293,8 +268,8 @@ export default function SimulatorLab() {
                 key={sc.id}
                 className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
                   isCurrent
-                    ? "border-red-500 bg-red-950/40 ring-2 ring-red-500/40 shadow-2xl"
-                    : "border-[var(--border-subtle)] bg-[var(--bg-panel)] hover:border-[var(--ice-cyan-dim)]"
+                    ? "border-red-500 bg-red-950/40 ring-2 ring-red-500/40 shadow-2xl backdrop-blur-md"
+                    : "ice-pane frost-border hover:border-[var(--ice-cyan)]"
                 }`}
               >
                 <div>
@@ -329,10 +304,10 @@ export default function SimulatorLab() {
                   <button
                     onClick={() => toggleDisaster(sc.id)}
                     disabled={loading}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold font-display uppercase tracking-wider transition cursor-pointer ${
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold font-display uppercase tracking-wider transition cursor-pointer shadow-md ${
                       isCurrent
-                        ? "bg-red-600 text-white animate-pulse"
-                        : "bg-[var(--ice-cyan)] text-black hover:opacity-90"
+                        ? "bg-red-600 text-white animate-pulse shadow-red-600/30"
+                        : "bg-gradient-to-r from-[var(--aurora-teal)] to-[var(--aurora-cyan)] text-black hover:opacity-90 shadow-teal-500/20"
                     }`}
                   >
                     {isCurrent ? "Active (Click to Stop)" : "Inject Disaster"}

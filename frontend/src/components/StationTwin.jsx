@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 
 const STATUS_COLOR = {
-  nominal: "#4ADE80",
-  warning: "#F4A93B",
-  critical: "#FF5D5D",
+  nominal: "#00F5A0",
+  warning: "#F59E0B",
+  critical: "#FF4B4B",
   offline: "#64748B",
 };
 
@@ -193,13 +193,13 @@ function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
       : layout.tempVal > 20
       ? "rgba(245, 158, 11, 0.45)"
       : layout.tempVal > 0
-      ? "rgba(16, 185, 129, 0.35)"
-      : "rgba(59, 130, 246, 0.5)";
+      ? "rgba(0, 245, 160, 0.35)"
+      : "rgba(0, 212, 255, 0.45)";
 
   // Network Layer Fill
   const networkFill = isSelected
-    ? "rgba(155, 140, 255, 0.3)"
-    : "rgba(15, 23, 42, 0.85)";
+    ? "rgba(139, 92, 246, 0.35)"
+    : "rgba(18, 24, 38, 0.85)";
 
   return (
     <g
@@ -211,19 +211,19 @@ function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
       {isCircle ? (
         <>
           {isCritical && (
-            <circle cx={cx} cy={cy} r={layout.w / 2 + 8} fill="none" stroke="#FF5D5D" strokeWidth="2.5" opacity="0.7" className="animate-ping" />
+            <circle cx={cx} cy={cy} r={layout.w / 2 + 8} fill="none" stroke="#FF4B4B" strokeWidth="2.5" opacity="0.7" className="animate-ping" />
           )}
           {activeLayer === "network" && (
-            <circle cx={cx} cy={cy} r={layout.w / 2 + 5} fill="none" stroke="#9B8CFF" strokeWidth="1.5" strokeDasharray="3 3" className="animate-spin" style={{ animationDuration: "12s" }} />
+            <circle cx={cx} cy={cy} r={layout.w / 2 + 5} fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeDasharray="3 3" className="animate-spin" style={{ animationDuration: "12s" }} />
           )}
           <circle
             cx={cx}
             cy={cy}
             r={layout.w / 2}
-            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "var(--bg-panel-raised)"}
-            stroke={isSelected ? "var(--ice-cyan)" : activeLayer === "network" ? "#9B8CFF" : color}
+            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "rgba(26, 35, 52, 0.75)"}
+            stroke={isSelected ? "var(--aurora-teal)" : activeLayer === "network" ? "#8B5CF6" : color}
             strokeWidth={isSelected ? 3.5 : 2}
-            className="group-hover:stroke-[var(--ice-cyan)] transition"
+            className="group-hover:stroke-[var(--aurora-teal)] transition"
           />
         </>
       ) : (
@@ -236,7 +236,7 @@ function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
               height={layout.h + 8}
               rx={12}
               fill="none"
-              stroke="#FF5D5D"
+              stroke="#FF4B4B"
               strokeWidth="2.5"
               opacity="0.7"
               className="animate-pulse"
@@ -248,14 +248,14 @@ function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
             width={layout.w}
             height={layout.h}
             rx={9}
-            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "var(--bg-panel-raised)"}
-            stroke={isSelected ? "var(--ice-cyan)" : activeLayer === "network" ? "#9B8CFF" : color}
+            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "rgba(26, 35, 52, 0.75)"}
+            stroke={isSelected ? "var(--aurora-teal)" : activeLayer === "network" ? "#8B5CF6" : color}
             strokeWidth={isSelected ? 3 : 1.8}
-            className="group-hover:stroke-[var(--ice-cyan)] transition"
+            className="group-hover:stroke-[var(--aurora-teal)] transition"
           />
           {/* Engineering CAD Corner Crosshairs */}
           {activeLayer === "cad" && (
-            <g stroke="var(--border-frozen)" strokeWidth="1" opacity="0.6">
+            <g stroke="rgba(0, 245, 160, 0.25)" strokeWidth="1" opacity="0.6">
               <line x1={layout.x + 2} y1={layout.y + 6} x2={layout.x + 10} y2={layout.y + 6} />
               <line x1={layout.x + 6} y1={layout.y + 2} x2={layout.x + 6} y2={layout.y + 10} />
             </g>
@@ -310,7 +310,7 @@ function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
             activeLayer === "flir"
               ? layout.tempVal > 50
                 ? "#FCA5A5"
-                : "#6FE7DD"
+                : "#00F5A0"
               : activeLayer === "network"
               ? "#C4B5FD"
               : "var(--text-tertiary)"
@@ -357,7 +357,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
   const selectedLayout = LAYOUT[selectedZone] || {};
   const selectedZoneReadings = telemetryByZone?.[selectedZone] || [];
 
-  const isBlizzard = station?.activeDisaster === "blizzard";
+  const isBlizzard = station?.activeDisaster === "blizzard" || station?.activeDisasters?.includes("blizzard");
   const stationName = station?.name || "Maitri Research Station";
   const lat = station?.location?.lat ?? -70.7669;
   const lng = station?.location?.lng ?? 11.7333;
@@ -368,12 +368,12 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
       {/* Animated Aurora or Frozen Border */}
       <div className={`absolute inset-0 ${isOffline ? "frozen-border" : "aurora-border"}`} />
 
-      <div className="relative rounded-2xl bg-[var(--bg-panel)] p-4 sm:p-6 space-y-4">
+      <div className="relative rounded-2xl ice-pane p-4 sm:p-6 space-y-4">
         {/* Twin Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--ice-cyan)] bg-[var(--bg-panel-raised)] px-2 py-0.5 rounded border border-[var(--ice-cyan-dim)]">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--aurora-teal)] bg-[var(--bg-panel-raised)] px-2.5 py-0.5 rounded border border-[var(--border-frozen)]">
                 {activeLayer === "cad" ? "Physical CAD Schematic" : activeLayer === "flir" ? "FLIR Infra-Red Thermal Twin" : "RF & Network Bus Topology"}
               </span>
               <h3 className="font-display text-base sm:text-lg font-semibold text-[var(--text-primary)]">
@@ -392,7 +392,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                 onClick={() => setActiveLayer("cad")}
                 className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg font-mono text-xs font-semibold transition cursor-pointer ${
                   activeLayer === "cad"
-                    ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
+                    ? "bg-[var(--bg-panel-raised)] text-[var(--aurora-teal)] border border-[var(--border-frozen)]"
                     : "text-[var(--text-secondary)] hover:text-white"
                 }`}
                 title="Physical Blueprint & Conduits"
@@ -418,7 +418,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                 onClick={() => setActiveLayer("network")}
                 className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg font-mono text-xs font-semibold transition cursor-pointer ${
                   activeLayer === "network"
-                    ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/50"
                     : "text-[var(--text-secondary)] hover:text-white"
                 }`}
                 title="Network Packet Routing & SATCOM Uplink"
@@ -430,11 +430,11 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
 
             <div className="flex items-center gap-2 font-mono text-xs pl-2 border-l border-[var(--border-subtle)]">
               <span
-                className={`w-2.5 h-2.5 rounded-full ${isOffline ? "bg-cyan-400 animate-pulse" : "bg-emerald-400 animate-ping"}`}
+                className={`w-2.5 h-2.5 rounded-full ${isOffline ? "bg-[var(--aurora-cyan)] animate-pulse" : "bg-[var(--aurora-teal)] animate-ping"}`}
               />
               <span
                 className="font-bold tracking-wide hidden sm:inline"
-                style={{ color: isOffline ? "var(--ice-cyan)" : "var(--status-nominal)" }}
+                style={{ color: isOffline ? "var(--aurora-cyan)" : "var(--status-nominal)" }}
               >
                 {isOffline ? "AUTONOMOUS EDGE" : "LIVE 2D TWIN"}
               </span>
@@ -443,7 +443,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
         </div>
 
         {/* Main Twin Body with Slide-In Diagnostic Drawer */}
-        <div className="relative bg-[var(--bg-deep)] rounded-xl border border-[var(--border-subtle)] overflow-hidden">
+        <div className="relative bg-[var(--bg-deep)]/90 rounded-xl border border-[var(--border-subtle)] overflow-hidden">
           {/* SVG Canvas for Station Digital Twin */}
           <div className="p-2 w-full overflow-hidden">
             <svg
@@ -455,13 +455,13 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
               <defs>
                 {/* Engineering Dot Grid */}
                 <pattern id="twinGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1" fill="#1F2937" />
+                  <circle cx="2" cy="2" r="1" fill="rgba(255, 255, 255, 0.08)" />
                 </pattern>
                 {/* FLIR Heatmap Pattern */}
                 <radialGradient id="flirHeatGlow" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
                   <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.05" />
+                  <stop offset="100%" stopColor="#00F5A0" stopOpacity="0.05" />
                 </radialGradient>
               </defs>
 
@@ -470,22 +470,22 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
 
               {/* Conduits & Flow Lines */}
               <g>
-                {/* Power Conduits (Amber / Electric Cyan) */}
-                <line x1="105" y1="140" x2="105" y2="170" stroke="#F4A93B" strokeWidth="3" className="flow-line-power" />
+                {/* Power Conduits (Amber / Electric Aurora Teal) */}
+                <line x1="105" y1="140" x2="105" y2="170" stroke="#F59E0B" strokeWidth="3" className="flow-line-power" />
                 <line x1="105" y1="250" x2="105" y2="275" stroke="#FB923C" strokeWidth="2.5" className="flow-line-fuel" />
-                <path d="M 175 95 L 215 95" stroke="#6FE7DD" strokeWidth="3" className="flow-line-power" />
-                <line x1="305" y1="170" x2="305" y2="195" stroke="#6FE7DD" strokeWidth="2.5" className="flow-line-power" />
-                <line x1="305" y1="280" x2="305" y2="305" stroke="#6FE7DD" strokeWidth="2.5" className="flow-line-power" />
+                <path d="M 175 95 L 215 95" stroke="#00F5A0" strokeWidth="3" className="flow-line-power" />
+                <line x1="305" y1="170" x2="305" y2="195" stroke="#00F5A0" strokeWidth="2.5" className="flow-line-power" />
+                <line x1="305" y1="280" x2="305" y2="305" stroke="#00F5A0" strokeWidth="2.5" className="flow-line-power" />
 
-                {/* SATCOM / Comms Data Bus (Violet) */}
-                <path d="M 395 90 L 440 75" stroke="#9B8CFF" strokeWidth="2.5" className="flow-line-network" />
+                {/* SATCOM / Comms Data Bus (Aurora Violet) */}
+                <path d="M 395 90 L 440 75" stroke="#8B5CF6" strokeWidth="2.5" className="flow-line-network" />
 
-                {/* Water Glycol Melt Pipe (Blue) */}
-                <path d="M 395 130 L 415 130 L 415 320 L 430 320" fill="none" stroke="#60A5FA" strokeWidth="2.5" className="flow-line-water" />
+                {/* Water Glycol Melt Pipe (Cyan / Blue) */}
+                <path d="M 395 130 L 415 130 L 415 320 L 430 320" fill="none" stroke="#00D4FF" strokeWidth="2.5" className="flow-line-water" />
 
                 {/* Network Layer: Additional Module-to-Module RF Routing Paths */}
                 {activeLayer === "network" && (
-                  <g stroke="#9B8CFF" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.6">
+                  <g stroke="#8B5CF6" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.6">
                     <line x1="475" y1="110" x2="475" y2="145" />
                     <line x1="305" y1="170" x2="430" y2="195" />
                     <line x1="175" y1="95" x2="440" y2="75" />
@@ -493,7 +493,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                 )}
               </g>
 
-              {/* Render 9 Station Zones */}
+              {/* Render Station Zones */}
               {zones.map((zone) => {
                 const layout = LAYOUT[zone.zoneId];
                 if (!layout) return null;
@@ -523,11 +523,11 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           )}
 
           {activeLayer === "network" && (
-            <div className="absolute top-3 right-3 bg-violet-950/85 border border-violet-500 px-3 py-1.5 rounded-xl text-violet-200 font-mono text-[10px] font-bold flex items-center gap-2 shadow-xl">
-              <Radio className="w-4 h-4 text-violet-400 animate-spin" />
+            <div className="absolute top-3 right-3 bg-purple-950/85 border border-purple-500 px-3 py-1.5 rounded-xl text-purple-200 font-mono text-[10px] font-bold flex items-center gap-2 shadow-xl">
+              <Radio className="w-4 h-4 text-purple-400 animate-spin" />
               <div>
                 <p>ISRO GSAT-30 UPLINK MESH: ONLINE</p>
-                <p className="text-[9px] text-violet-300/80 font-normal">Packet Latency: ~420ms | Bandwidth: 15 Mbps</p>
+                <p className="text-[9px] text-purple-300/80 font-normal">Packet Latency: ~420ms | Bandwidth: 15 Mbps</p>
               </div>
             </div>
           )}
@@ -535,16 +535,16 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           {/* Blizzard atmospheric snow effect if blizzard disaster active */}
           {isBlizzard && (
             <div className="absolute inset-0 pointer-events-none bg-cyan-400/5 border border-cyan-300/30 flex items-center justify-center">
-              <div className="bg-cyan-950/90 border border-cyan-400 px-4 py-2 rounded-xl text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-2xl animate-pulse">
+              <div className="bg-cyan-950/90 border border-[var(--aurora-cyan)] px-4 py-2 rounded-xl text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-2xl animate-pulse">
                 <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
-                <span>POLAR BLIZZARD CAT-5 DETECTED (GUSTS 145 KM/H · PERIMETER SEAL ENGAGED)</span>
+                <span>POLAR BLIZZARD CAT-4 ACTIVE (GUSTS 145 KM/H · PERIMETER SEAL ENGAGED)</span>
               </div>
             </div>
           )}
 
           {/* Slide-In Diagnostic Detail Drawer (Keeps Twin Visible!) */}
           {selectedZone && selectedZoneData && (
-            <div className="absolute top-0 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[var(--bg-panel)]/95 backdrop-blur-md border-l border-[var(--ice-cyan)]/40 p-4 sm:p-5 flex flex-col justify-between shadow-2xl z-20 animate-fadeIn overflow-y-auto">
+            <div className="absolute top-0 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[var(--bg-panel-solid)]/95 backdrop-blur-md border-l border-[var(--border-frozen)] p-4 sm:p-5 flex flex-col justify-between shadow-2xl z-20 animate-fadeIn overflow-y-auto">
               <div>
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3 mb-3">
@@ -554,7 +554,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                       <h4 className="font-display font-bold text-sm text-white">
                         {selectedZoneData.label || selectedLayout.label}
                       </h4>
-                      <p className="font-mono text-[10px] text-[var(--ice-cyan)] uppercase">
+                      <p className="font-mono text-[10px] text-[var(--aurora-teal)] uppercase">
                         Module Type: {selectedZoneData.type || "zone"}
                       </p>
                     </div>
@@ -575,7 +575,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
 
                 {/* Key Status Indicators */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                  <div className="p-2.5 rounded-xl ice-pane-raised border border-[var(--border-subtle)]">
                     <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Status</p>
                     <p
                       className="font-mono text-xs font-bold mt-0.5 uppercase"
@@ -584,21 +584,21 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                       {selectedZoneData.status || "nominal"}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                  <div className="p-2.5 rounded-xl ice-pane-raised border border-[var(--border-subtle)]">
                     <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Temperature</p>
                     <p className="font-mono text-xs font-bold text-amber-300 mt-0.5">
                       {selectedLayout.temp || "21.0°C"}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                  <div className="p-2.5 rounded-xl ice-pane-raised border border-[var(--border-subtle)]">
                     <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Power Draw</p>
-                    <p className="font-mono text-xs font-bold text-[var(--ice-cyan)] mt-0.5">
+                    <p className="font-mono text-xs font-bold text-[var(--aurora-teal)] mt-0.5">
                       {selectedLayout.powerLoad || "12.5 kW"}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                  <div className="p-2.5 rounded-xl ice-pane-raised border border-[var(--border-subtle)]">
                     <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Bus Latency</p>
-                    <p className="font-mono text-xs font-bold text-violet-300 mt-0.5">
+                    <p className="font-mono text-xs font-bold text-purple-300 mt-0.5">
                       {selectedLayout.latency || "1.0 ms"}
                     </p>
                   </div>
@@ -611,7 +611,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                     {selectedZoneReadings.slice(0, 4).map((r, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-xs">
                         <span className="text-[var(--text-secondary)] capitalize">{r.metric.replace(/_/g, " ")}</span>
-                        <span className="font-mono font-bold text-[var(--ice-cyan)]">{r.value}</span>
+                        <span className="font-mono font-bold text-[var(--aurora-teal)]">{r.value}</span>
                       </div>
                     ))}
                   </div>
@@ -622,11 +622,11 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
               <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
                 <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
                   <span>Aux Trace Heater</span>
-                  <span className="text-emerald-400 font-bold">ENGAGED</span>
+                  <span className="text-[var(--aurora-teal)] font-bold">ENGAGED</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
                   <span>Failover Isolation Loop</span>
-                  <span className="text-cyan-400 font-bold">READY</span>
+                  <span className="text-[var(--aurora-cyan)] font-bold">READY</span>
                 </div>
                 <button
                   onClick={() => onSelectZone(null)}
@@ -655,7 +655,7 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                 onClick={() => onSelectZone(isSel ? null : z.zoneId)}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-mono whitespace-nowrap border transition cursor-pointer shrink-0 ${
                   isSel
-                    ? "bg-[var(--ice-cyan)] text-black font-bold border-[var(--ice-cyan)]"
+                    ? "bg-gradient-to-r from-[var(--aurora-teal)] to-[var(--aurora-cyan)] text-black font-bold border-transparent"
                     : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
                 }`}
               >

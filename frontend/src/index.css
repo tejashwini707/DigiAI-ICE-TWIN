@@ -2,28 +2,32 @@
 @import "tailwindcss";
 
 :root {
-  /* Polar night surfaces — deliberately blue-black, not pure #000 */
-  --bg-deep: #070B12;
-  --bg-panel: #0D141F;
-  --bg-panel-raised: #141D2B;
-  --border-subtle: #1F2937;
-  --border-frozen: #2A3B4A;
+  /* Aurora Polar Night Theme surfaces */
+  --bg-deep: #06080F;
+  --bg-panel: rgba(18, 24, 38, 0.65);
+  --bg-panel-solid: #0E1422;
+  --bg-panel-raised: rgba(26, 35, 52, 0.7);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-frozen: rgba(0, 245, 160, 0.22);
+  --border-crystal: rgba(139, 92, 246, 0.25);
 
-  /* Aurora accent pair — the twin's "alive" signal */
-  --ice-cyan: #6FE7DD;
-  --ice-cyan-dim: #3D8F87;
-  --aurora-violet: #9B8CFF;
+  /* Shifting Aurora Accent Trinity */
+  --aurora-teal: #00F5A0;
+  --aurora-violet: #8B5CF6;
+  --aurora-cyan: #00D4FF;
+  --ice-cyan: #00F5A0;
+  --ice-cyan-dim: #00D4FF;
 
-  /* Status */
-  --status-nominal: #4ADE80;
-  --status-warning: #F4A93B;
-  --status-critical: #FF5D5D;
-  --status-offline: #57657A;
+  /* Functional Statuses grounded in Aurora Polar Night */
+  --status-nominal: #00F5A0;
+  --status-warning: #F59E0B;
+  --status-critical: #FF4B4B;
+  --status-offline: #64748B;
 
-  /* Text */
-  --text-primary: #EAF2F5;
-  --text-secondary: #8B98A8;
-  --text-tertiary: #5B6472;
+  /* Crisp Typography */
+  --text-primary: #F0FDF8;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
 
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -48,44 +52,88 @@ body, #root {
   font-family: var(--font-body);
 }
 
+/* Starfield texture & 60s slow subtle ambient Aurora Sky Drift */
+@keyframes auroraSkyDrift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 50% 50%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 100%, 0% 0%;
+  }
+  100% {
+    background-position: 0% 0%, 100% 0%, 50% 50%;
+  }
+}
+
 body {
+  background-color: #06080F;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(111, 231, 221, 0.06), transparent),
-    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(155, 140, 255, 0.04), transparent);
+    radial-gradient(ellipse 70% 45% at 20% 0%, rgba(0, 245, 160, 0.07), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 15%, rgba(139, 92, 246, 0.06), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 50% 80%, rgba(0, 212, 255, 0.05), transparent 70%),
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1px 1px at 80px 120px, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1.5px 1.5px at 150px 70px, rgba(0, 245, 160, 0.2), transparent),
+    radial-gradient(1px 1px at 230px 190px, rgba(139, 92, 246, 0.18), transparent),
+    radial-gradient(1px 1px at 310px 40px, rgba(255, 255, 255, 0.2), transparent);
+  background-size: 200% 200%, 200% 200%, 200% 200%, 350px 350px, 400px 400px, 300px 300px, 450px 450px, 380px 380px;
+  animation: auroraSkyDrift 60s ease-in-out infinite alternate;
 }
 
 ::selection {
-  background: var(--ice-cyan);
-  color: var(--bg-deep);
+  background: var(--aurora-teal);
+  color: #06080F;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-panel); }
-::-webkit-scrollbar-thumb { background: var(--border-frozen); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ice-cyan-dim); }
+::-webkit-scrollbar-track { background: rgba(18, 24, 38, 0.5); }
+::-webkit-scrollbar-thumb { background: rgba(0, 245, 160, 0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--aurora-teal); }
 
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-mono); }
 
+/* Frosted Ice Pane Class */
+.ice-pane {
+  background: rgba(18, 24, 38, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ice-pane-raised {
+  background: rgba(26, 35, 52, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 245, 160, 0.15);
+}
+
+/* Shifting Aurora Glow Border */
 @keyframes aurora-flow {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 .aurora-border {
-  background: linear-gradient(120deg, var(--ice-cyan), var(--aurora-violet), var(--ice-cyan));
-  background-size: 200% 200%;
-  animation: aurora-flow 6s ease infinite;
+  background: linear-gradient(120deg, var(--aurora-teal), var(--aurora-violet), var(--aurora-cyan), var(--aurora-teal));
+  background-size: 300% 300%;
+  animation: aurora-flow 8s ease infinite;
 }
 
 .frozen-border {
   background-image: repeating-linear-gradient(
     135deg,
-    var(--border-frozen),
-    var(--border-frozen) 6px,
-    var(--bg-panel) 6px,
-    var(--bg-panel) 12px
+    rgba(0, 212, 255, 0.3),
+    rgba(0, 212, 255, 0.3) 6px,
+    rgba(18, 24, 38, 0.8) 6px,
+    rgba(18, 24, 38, 0.8) 12px
   );
+}
+
+/* Subtle Crystalline Frost Outline */
+.frost-border {
+  border: 1px solid rgba(0, 245, 160, 0.25);
+  box-shadow: 0 0 15px rgba(0, 245, 160, 0.04);
 }
 
 @keyframes pulse-dot {
@@ -145,8 +193,8 @@ body {
 .tv-mode-grid {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(111, 231, 221, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(111, 231, 221, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 245, 160, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 245, 160, 0.04) 1px, transparent 1px);
 }
 
 @media print {
@@ -160,5 +208,5 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-border, .pulse-dot, .animate-pulse-subtle, .animate-bounce-subtle, .flow-line-power, .flow-line-water, .flow-line-network, .flow-line-fuel { animation: none; }
+  .aurora-border, .pulse-dot, .animate-pulse-subtle, .animate-bounce-subtle, .flow-line-power, .flow-line-water, .flow-line-network, .flow-line-fuel, body { animation: none; }
 }
