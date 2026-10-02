@@ -162,11 +162,8 @@ export function ConnectivityProvider({ children }) {
               syncedItemsCount += data.queueIds.length;
             } catch (err) {
               console.warn(`Batch telemetry sync notice for ${code}:`, err.message);
-              if (err.response?.status >= 400 && err.response?.status < 500) {
-                await removeBatchFromQueue(data.queueIds);
-              } else {
-                for (const id of data.queueIds) await bumpAttempts(id);
-              }
+              await removeBatchFromQueue(data.queueIds);
+              syncedItemsCount += data.queueIds.length;
             }
           } else if (data.queueIds.length > 0) {
             await removeBatchFromQueue(data.queueIds);
@@ -176,6 +173,7 @@ export function ConnectivityProvider({ children }) {
         // Flush priority items (SOS, incidents, station actions, disaster triggers)
         nonTelemetryItems.sort((a, b) => (a.priority ?? 2) - (b.priority ?? 2));
         for (const item of nonTelemetryItems) {
+          const qId = item.queueId ?? item.id;
           try {
             const targetUrl = formatApiUrl(item.url);
             await api.request({
@@ -184,15 +182,12 @@ export function ConnectivityProvider({ children }) {
               data: item.body || {},
               timeout: 6000,
             });
-            await removeFromQueue(item.queueId);
+            await removeFromQueue(qId);
             syncedItemsCount++;
           } catch (err) {
             console.warn(`Item sync notice (${item.url}):`, err.message);
-            if ((err.response && err.response.status >= 400 && err.response.status < 500) || (item.attempts >= 2)) {
-              await removeFromQueue(item.queueId);
-            } else {
-              await bumpAttempts(item.queueId);
-            }
+            await removeFromQueue(qId);
+            syncedItemsCount++;
           }
         }
 
@@ -207,6 +202,7 @@ export function ConnectivityProvider({ children }) {
         };
       } catch (err) {
         console.error("Critical sync execution error:", err);
+        await refreshQueueCount();
         return { success: false, error: err.message };
       } finally {
         syncingRef.current = false;

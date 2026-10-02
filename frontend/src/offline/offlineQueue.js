@@ -45,21 +45,40 @@ export async function getQueueCount() {
 }
 
 export async function removeFromQueue(queueId) {
+  if (queueId == null) return;
   const db = await getDB();
-  return db.delete(STORE, queueId);
+  const idNum = typeof queueId === "number" ? queueId : isNaN(Number(queueId)) ? queueId : Number(queueId);
+  try {
+    await db.delete(STORE, idNum);
+  } catch {
+    await db.delete(STORE, queueId);
+  }
 }
 
 export async function removeBatchFromQueue(queueIds) {
   if (!queueIds || queueIds.length === 0) return;
   const db = await getDB();
   const tx = db.transaction(STORE, "readwrite");
-  await Promise.all(queueIds.map((id) => tx.store.delete(id)));
+  await Promise.all(
+    queueIds
+      .filter((id) => id != null)
+      .map(async (id) => {
+        const idNum = typeof id === "number" ? id : isNaN(Number(id)) ? id : Number(id);
+        try {
+          await tx.store.delete(idNum);
+        } catch {
+          await tx.store.delete(id);
+        }
+      })
+  );
   await tx.done;
 }
 
 export async function bumpAttempts(queueId) {
+  if (queueId == null) return;
   const db = await getDB();
-  const record = await db.get(STORE, queueId);
+  const idNum = typeof queueId === "number" ? queueId : isNaN(Number(queueId)) ? queueId : Number(queueId);
+  const record = (await db.get(STORE, idNum)) || (await db.get(STORE, queueId));
   if (!record) return;
   record.attempts = (record.attempts || 0) + 1;
   await db.put(STORE, record);

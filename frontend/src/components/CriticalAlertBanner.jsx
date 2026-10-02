@@ -6,14 +6,27 @@ export default function CriticalAlertBanner({ prediction, onExecuteMitigation })
   const [acknowledged, setAcknowledged] = useState(false);
   const [isMuted, setIsMuted] = useState(soundEngine.isMuted());
 
-  const alert = prediction?.alert;
-  const isCritical = alert?.level === "critical";
-  const isWarning = alert?.level === "warning";
+  // Derive alert object reliably from prediction
+  const isCritical = prediction?.status === "critical" || (prediction?.riskScore || 0) >= 70 || Boolean(prediction?.activeDisaster) || (prediction?.activeDisasters && prediction.activeDisasters.length > 0);
+  const isWarning = !isCritical && (prediction?.status === "warning" || (prediction?.riskScore || 0) >= 30);
+
+  const alert = prediction?.alert || (
+    isCritical ? {
+      level: "critical",
+      title: `🚨 CRITICAL ALERT: ${prediction?.primaryThreat || "Active Subsystem Anomaly"}`,
+      message: `Station risk index elevated to ${prediction?.riskScore || 88}%. Projected TTF countdown: ${prediction?.timeToFailure?.formatted || "1h 45m"}. Immediate SOP countermeasure execution required.`,
+    } : isWarning ? {
+      level: "warning",
+      title: `⚠️ WARNING: ${prediction?.primaryThreat || "Subsystem Warning"}`,
+      message: `Telemetry fluctuation detected. Predictive AI recommends monitoring zone status envelopes.`,
+    } : null
+  );
+
   const ttf = prediction?.timeToFailure;
 
   useEffect(() => {
     setAcknowledged(false);
-    if (alert && (isCritical || isWarning)) {
+    if (isCritical || isWarning) {
       soundEngine.startSiren();
     } else {
       soundEngine.stopSiren();
@@ -27,6 +40,9 @@ export default function CriticalAlertBanner({ prediction, onExecuteMitigation })
     const nextMute = !isMuted;
     setIsMuted(nextMute);
     soundEngine.setMuted(nextMute);
+    if (!nextMute && (isCritical || isWarning)) {
+      soundEngine.startSiren();
+    }
   };
 
   if (!alert || (acknowledged && !isCritical)) return null;
