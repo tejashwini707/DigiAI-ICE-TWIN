@@ -8,27 +8,22 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  let token = localStorage.getItem("twin_token");
-  if (!token) {
-    token = "demo-session-token-hq";
-    localStorage.setItem("twin_token", token);
+  let token = sessionStorage.getItem("twin_token") || localStorage.getItem("twin_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If unauthorized, clean stale token and allow graceful re-auth
+    // If 401 unauthorized, log warning and reject
     if (error.response && error.response.status === 401) {
-      console.warn("API 401: resetting stale token to demo session token");
-      const fallbackToken = "demo-session-token-" + Date.now();
-      localStorage.setItem("twin_token", fallbackToken);
+      console.warn("API 401: Unauthorized access or token expired");
     }
     return Promise.reject(error);
   }
 );
 
 export default api;
-

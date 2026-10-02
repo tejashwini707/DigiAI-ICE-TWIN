@@ -7,6 +7,7 @@ import {
   removeFromQueue,
   removeBatchFromQueue,
   bumpAttempts,
+  clearQueue,
 } from "../offline/offlineQueue.js";
 
 const ConnectivityContext = createContext(null);
@@ -95,9 +96,9 @@ export function ConnectivityProvider({ children }) {
       let syncedItemsCount = 0;
 
       try {
-        // Step 1: Health check ping to HQ
+        // Step 1: Lightweight health check ping to HQ API
         try {
-          await api.get("/stations", { timeout: 4000 });
+          await api.get("/health", { timeout: 4000 });
         } catch (pingErr) {
           console.warn("HQ ping failed during sync:", pingErr.message);
           return {
@@ -123,8 +124,12 @@ export function ConnectivityProvider({ children }) {
             const match = item.url.match(/\/telemetry\/([^/?]+)/);
             const code = (match ? match[1] : "MAITRI").toUpperCase();
             if (!telemetryByStation[code]) telemetryByStation[code] = { items: [], queueIds: [] };
-            const payloadArray = Array.isArray(item.body) ? item.body : [item.body];
-            telemetryByStation[code].items.push(...payloadArray);
+            const rawBody = item.body;
+            const payloadArray = Array.isArray(rawBody) ? rawBody : rawBody ? [rawBody] : [];
+            const validReadings = payloadArray.filter((r) => r && typeof r === "object");
+            if (validReadings.length > 0) {
+              telemetryByStation[code].items.push(...validReadings);
+            }
             telemetryByStation[code].queueIds.push(item.queueId);
           } else {
             nonTelemetryItems.push(item);
@@ -145,13 +150,16 @@ export function ConnectivityProvider({ children }) {
               syncedItemsCount += data.queueIds.length;
             } catch (err) {
               console.warn(`Batch telemetry sync notice for ${code}:`, err.message);
-              // If client error or already attempted multiple times, prune to avoid stuck queue
+              // If client error (4xx) or already attempted multiple times, prune to avoid stuck queue
               if (err.response?.status >= 400 && err.response?.status < 500) {
                 await removeBatchFromQueue(data.queueIds);
               } else {
                 for (const id of data.queueIds) await bumpAttempts(id);
               }
             }
+          } else if (data.queueIds.length > 0) {
+            // Clean up empty telemetry queue entries
+            await removeBatchFromQueue(data.queueIds);
           }
         }
 
@@ -159,7 +167,6 @@ export function ConnectivityProvider({ children }) {
         nonTelemetryItems.sort((a, b) => (a.priority ?? 2) - (b.priority ?? 2));
         for (const item of nonTelemetryItems) {
           try {
-            // Clean up relative URL if necessary
             let targetUrl = item.url || "";
             if (targetUrl.startsWith("/api/")) targetUrl = targetUrl.replace("/api/", "/");
             
@@ -173,7 +180,6 @@ export function ConnectivityProvider({ children }) {
             syncedItemsCount++;
           } catch (err) {
             console.warn(`Item sync notice (${item.url}):`, err.message);
-            // If 4xx client error (e.g. 404, 400) or already attempted twice, discard to prevent stuck queue
             if ((err.response && err.response.status >= 400 && err.response.status < 500) || (item.attempts >= 2)) {
               await removeFromQueue(item.queueId);
             } else {
@@ -202,18 +208,21 @@ export function ConnectivityProvider({ children }) {
     [isOffline, notifySyncListeners, refreshQueueCount]
   );
 
-  // Manual trigger wrapper for Sync Now button with automatic reconnection if needed
+  // Manual trigger wrapper for Sync Now button with automatic reconnection
   const triggerSync = useCallback(async () => {
     if (simulatedOffline) {
       setSimulatedOffline(false);
-      return flushQueue(true);
     }
     return flushQueue(true);
   }, [simulatedOffline, flushQueue]);
 
   const clearAllQueue = useCallback(async () => {
-    await clearQueue();
-    await refreshQueueCount();
+    try {
+      await clearQueue();
+      await refreshQueueCount();
+    } catch (err) {
+      console.warn("Failed to clear local write queue:", err);
+    }
   }, [refreshQueueCount]);
 
   // Auto-flush whenever connection returns online
@@ -248,4 +257,3 @@ export function useConnectivity() {
   if (!ctx) throw new Error("useConnectivity must be used within ConnectivityProvider");
   return ctx;
 }
-

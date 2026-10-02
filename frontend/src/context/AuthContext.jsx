@@ -1,11 +1,12 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import api from "../services/api.js";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  // Always require sign-in on fresh website opening by reading from sessionStorage
   const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem("twin_user");
+    const raw = sessionStorage.getItem("twin_user");
     return raw ? JSON.parse(raw) : null;
   });
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,8 @@ export function AuthProvider({ children }) {
         email: emailClean,
         password: passClean,
       });
+      sessionStorage.setItem("twin_token", data.token);
+      sessionStorage.setItem("twin_user", JSON.stringify(data.user));
       localStorage.setItem("twin_token", data.token);
       localStorage.setItem("twin_user", JSON.stringify(data.user));
       setUser(data.user);
@@ -44,6 +47,8 @@ export function AuthProvider({ children }) {
           stationCode: isMaitri ? "MAITRI" : isBharati ? "BHARATI" : null,
         };
         const fallbackToken = "demo-session-token-" + Date.now();
+        sessionStorage.setItem("twin_token", fallbackToken);
+        sessionStorage.setItem("twin_user", JSON.stringify(fallbackUser));
         localStorage.setItem("twin_token", fallbackToken);
         localStorage.setItem("twin_user", JSON.stringify(fallbackUser));
         setUser(fallbackUser);
@@ -60,6 +65,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    sessionStorage.removeItem("twin_token");
+    sessionStorage.removeItem("twin_user");
     localStorage.removeItem("twin_token");
     localStorage.removeItem("twin_user");
     setUser(null);
