@@ -17,7 +17,6 @@ import {
   Cpu,
   Radio,
 } from "lucide-react";
-import { useConnectivity } from "../context/ConnectivityContext.jsx";
 import soundEngine from "../services/soundEngine.js";
 
 const SCENARIOS = [
@@ -28,8 +27,13 @@ const SCENARIOS = [
   { id: "water_freeze", label: "Glacial Melt Freeze", icon: Droplets, color: "hover:border-blue-400 hover:text-blue-300" },
 ];
 
-export default function PredictionRiskPanel({ prediction, stationCode = "MAITRI", onExecuteMitigation, onScenarioInjected }) {
-  const { write } = useConnectivity();
+export default function PredictionRiskPanel({
+  prediction,
+  stationCode = "MAITRI",
+  onExecuteMitigation,
+  onTriggerDisaster,
+  onResetNominal,
+}) {
   const [injecting, setInjecting] = useState(false);
 
   if (!prediction) {
@@ -57,37 +61,23 @@ export default function PredictionRiskPanel({ prediction, stationCode = "MAITRI"
   const isCritical = status === "critical" || riskScore >= 75;
   const isWarning = status === "warning" || (riskScore >= 30 && riskScore < 75);
 
-  const handleTriggerScenario = async (disasterType) => {
+  const handleScenarioClick = async (disasterType) => {
     setInjecting(true);
-    soundEngine.playSiren();
     try {
-      await write({
-        type: "station_disaster",
-        method: "POST",
-        url: `/stations/${stationCode}/disaster`,
-        body: { disasterType, toggle: true },
-      });
-      onScenarioInjected?.();
-    } catch (err) {
-      console.warn("Scenario injection notice:", err.message);
+      if (onTriggerDisaster) {
+        await onTriggerDisaster(disasterType);
+      }
     } finally {
       setInjecting(false);
     }
   };
 
-  const handleResetNominal = async () => {
+  const handleResetClick = async () => {
     setInjecting(true);
-    soundEngine.playSuccess();
     try {
-      await write({
-        type: "station_resolve",
-        method: "POST",
-        url: `/stations/${stationCode}/resolve-disaster`,
-        body: {},
-      });
-      onScenarioInjected?.();
-    } catch (err) {
-      console.warn("Reset nominal notice:", err.message);
+      if (onResetNominal) {
+        await onResetNominal();
+      }
     } finally {
       setInjecting(false);
     }
@@ -159,7 +149,7 @@ export default function PredictionRiskPanel({ prediction, stationCode = "MAITRI"
             </p>
           </div>
           <button
-            onClick={handleResetNominal}
+            onClick={handleResetClick}
             disabled={injecting}
             className="flex items-center gap-1 text-[11px] font-mono text-[var(--aurora-teal)] hover:text-white transition cursor-pointer"
           >
@@ -176,7 +166,7 @@ export default function PredictionRiskPanel({ prediction, stationCode = "MAITRI"
               <button
                 key={sc.id}
                 disabled={injecting}
-                onClick={() => handleTriggerScenario(sc.id)}
+                onClick={() => handleScenarioClick(sc.id)}
                 className={`flex items-center gap-1.5 p-2 rounded-lg border text-[11px] font-mono font-medium transition cursor-pointer text-left ${
                   isCurrent
                     ? "bg-red-950/70 border-red-500 text-red-300 font-bold shadow-md shadow-red-500/20"

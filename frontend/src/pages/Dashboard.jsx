@@ -216,77 +216,154 @@ export default function Dashboard() {
     return () => clearInterval(edgeInterval);
   }, [isOffline, stationCode, write]);
 
-  // Mitigation SOP Execution Handler with success chime
-  const handleExecuteMitigation = async (rec) => {
-    try {
-      soundEngine.playSuccess();
-      if (rec.action === "resolve_disaster") {
-        await handleResolveDisaster();
-        return;
-      }
-      const protocol = rec.protocol || "shed_load_aux_gen";
+  // INSTANT REACTIVE DISASTER INJECTION HANDLER
+  const handleTriggerDisaster = async (disasterType) => {
+    soundEngine.playSiren();
 
-      const mitigationIncident = {
-        _id: `inc-mit-${Date.now()}`,
-        stationCode,
-        zoneId: "power-plant",
-        title: `Auto-Executed SOP: ${rec.label || protocol}`,
-        severity: "info",
-        status: "resolved",
-        reportedBy: "Polar-Twin Autonomous AI",
-        createdAt: new Date().toISOString(),
-        createdOfflineAt: isOffline ? new Date().toISOString() : undefined,
+    const currentList = twin?.station?.activeDisasters || (twin?.station?.activeDisaster ? [twin?.station?.activeDisaster] : []);
+    const updatedList = currentList.includes(disasterType)
+      ? currentList.filter((d) => d !== disasterType)
+      : [...currentList, disasterType];
+
+    const updatedStation = {
+      ...(twin?.station || DEFAULT_STATIONS[stationCode]),
+      activeDisaster: updatedList[0] || null,
+      activeDisasters: updatedList,
+      mitigationApplied: null,
+    };
+
+    // Immediately calculate new telemetry & AI risk curve
+    const edgeResult = generateOfflineTick(updatedStation, twin?.telemetry || {});
+    setTwin((prev) => ({
+      ...prev,
+      station: edgeResult.station,
+      telemetry: edgeResult.telemetryByZone,
+      prediction: edgeResult.prediction,
+    }));
+    setPrediction(edgeResult.prediction);
+
+    if (updatedList.length > 0) {
+      setActionNotice(`🚨 Injected Disaster: [${updatedList.map((d) => d.toUpperCase()).join(" + ")}] active in ${stationCode}!`);
+      const disasterLabels = {
+        battery_drain: "Inverter Thermal Overload & Battery Drain",
+        generator_failure: "Primary Diesel GenSet #1 Stall",
+        blizzard: "Category 4 Katabatic Blizzard (145 km/h)",
+        comms_blackout: "ISRO GSAT-30 SATCOM Dropout",
+        water_freeze: "Glacial Melt Intake Sub-Zero Freeze",
       };
+      const inc = {
+        _id: `inc-dis-${Date.now()}`,
+        stationCode,
+        zoneId: disasterType === "battery_drain" ? "power-plant" : disasterType === "generator_failure" ? "generator-shed" : disasterType === "blizzard" ? "living-quarters" : disasterType === "water_freeze" ? "water-plant" : "comms-tower",
+        title: `🚨 Emergency Injected: ${disasterLabels[disasterType] || disasterType.toUpperCase()}`,
+        severity: "critical",
+        status: "open",
+        reportedBy: "AI Telemetry Anomaly Guard",
+        createdAt: new Date().toISOString(),
+      };
+      setIncidents((prev) => [inc, ...prev]);
+    } else {
+      setActionNotice("✅ Cleared disaster. All station parameters nominal.");
+    }
+    setTimeout(() => setActionNotice(null), 5000);
 
-      setIncidents((prev) => [mitigationIncident, ...prev]);
-
-      await write({
-        type: "incident",
+    // Sync to backend / IndexedDB queue
+    try {
+      const res = await write({
+        type: "station_disaster",
         method: "POST",
-        url: `/incidents/${stationCode}`,
-        body: {
-          title: `Auto-Executed SOP: ${rec.label || protocol}`,
-          severity: "info",
-          reportedBy: "Polar-Twin Autonomous AI",
-          createdOfflineAt: isOffline ? new Date().toISOString() : undefined,
-        },
+        url: `/stations/${stationCode}/disaster`,
+        body: { disasterType, toggle: true, activeDisasters: updatedList },
       });
-
-      await write({
-        type: "station_mitigate",
-        method: "POST",
-        url: `/stations/${stationCode}/apply-mitigation`,
-        body: { mitigationAction: protocol },
-      });
-
-      setActionNotice(`Executed SOP Protocol: ${rec.label || protocol}. Risk reduced by ${rec.riskDelta || "-15%"}.`);
-      setTimeout(() => setActionNotice(null), 5000);
-      loadAll();
-    } catch (err) {
-      console.warn("Mitigation note:", err.message);
+      if (res?.data?.prediction) {
+        setPrediction(res.data.prediction);
+      }
+    } catch (e) {
+      console.warn("Backend disaster sync note:", e.message);
     }
   };
 
+  // INSTANT REACTIVE DISASTER RESOLUTION HANDLER
   const handleResolveDisaster = async () => {
+    soundEngine.playSuccess();
+
+    const updatedStation = {
+      ...(twin?.station || DEFAULT_STATIONS[stationCode]),
+      activeDisaster: null,
+      activeDisasters: [],
+      mitigationApplied: null,
+    };
+
+    const edgeResult = generateOfflineTick(updatedStation, twin?.telemetry || {});
+    setTwin((prev) => ({
+      ...prev,
+      station: edgeResult.station,
+      telemetry: edgeResult.telemetryByZone,
+      prediction: edgeResult.prediction,
+    }));
+    setPrediction(edgeResult.prediction);
+    setActionNotice("✅ All station alarms cleared. Normal polar power grid restored.");
+    setTimeout(() => setActionNotice(null), 5000);
+
     try {
-      soundEngine.playSuccess();
-      const res = await write({
+      await write({
         type: "station_resolve",
         method: "POST",
         url: `/stations/${stationCode}/resolve-disaster`,
         body: {},
       });
-      if (res.queued) {
-        setTwin((prev) => ({
-          ...prev,
-          station: { ...prev.station, activeDisaster: null, activeDisasters: [] },
-        }));
-      }
-      setActionNotice("All station alarms cleared. Power grid nominal.");
-      setTimeout(() => setActionNotice(null), 5000);
-      loadAll();
-    } catch (err) {
-      console.warn("Resolve disaster notice:", err.message);
+    } catch (e) {
+      console.warn("Backend resolve note:", e.message);
+    }
+  };
+
+  // Mitigation SOP Execution Handler with success chime
+  const handleExecuteMitigation = async (rec) => {
+    soundEngine.playSuccess();
+    if (rec.action === "resolve_disaster") {
+      await handleResolveDisaster();
+      return;
+    }
+    const protocol = rec.protocol || "shed_load_aux_gen";
+
+    const updatedStation = {
+      ...(twin?.station || DEFAULT_STATIONS[stationCode]),
+      mitigationApplied: protocol,
+    };
+
+    const edgeResult = generateOfflineTick(updatedStation, twin?.telemetry || {});
+    setTwin((prev) => ({
+      ...prev,
+      station: edgeResult.station,
+      telemetry: edgeResult.telemetryByZone,
+      prediction: edgeResult.prediction,
+    }));
+    setPrediction(edgeResult.prediction);
+
+    const mitigationIncident = {
+      _id: `inc-mit-${Date.now()}`,
+      stationCode,
+      zoneId: "power-plant",
+      title: `⚡ Auto-Executed SOP: ${rec.label || protocol}`,
+      severity: "info",
+      status: "resolved",
+      reportedBy: "Polar-Twin Autonomous AI",
+      createdAt: new Date().toISOString(),
+    };
+    setIncidents((prev) => [mitigationIncident, ...prev]);
+
+    setActionNotice(`Executed SOP Protocol: ${rec.label || protocol}. Risk reduced by ${rec.riskDelta || "-15%"}.`);
+    setTimeout(() => setActionNotice(null), 5000);
+
+    try {
+      await write({
+        type: "station_mitigate",
+        method: "POST",
+        url: `/stations/${stationCode}/apply-mitigation`,
+        body: { protocol },
+      });
+    } catch (e) {
+      console.warn("Mitigation sync note:", e.message);
     }
   };
 
@@ -565,7 +642,8 @@ export default function Dashboard() {
                 prediction={prediction}
                 stationCode={stationCode}
                 onExecuteMitigation={handleExecuteMitigation}
-                onScenarioInjected={loadAll}
+                onTriggerDisaster={handleTriggerDisaster}
+                onResetNominal={handleResolveDisaster}
               />
             )}
 
