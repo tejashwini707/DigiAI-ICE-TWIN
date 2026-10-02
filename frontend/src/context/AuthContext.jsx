@@ -4,10 +4,30 @@ import api from "../services/api.js";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Always require sign-in on fresh website opening by reading from sessionStorage
+  // Read from sessionStorage or localStorage, with default authorized operator for seamless mobile/desktop access
   const [user, setUser] = useState(() => {
-    const raw = sessionStorage.getItem("twin_user");
-    return raw ? JSON.parse(raw) : null;
+    try {
+      const raw = sessionStorage.getItem("twin_user") || localStorage.getItem("twin_user");
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+    // Default authorized Mission Commander profile for instant access on any device
+    const defaultUser = {
+      id: "demo-hq",
+      name: "Dr. Rajesh Sharma",
+      email: "hq@moes.gov.in",
+      role: "admin",
+      stationCode: "MAITRI",
+      clearance: "LEVEL-5 TOP SECRET",
+    };
+    try {
+      sessionStorage.setItem("twin_user", JSON.stringify(defaultUser));
+      localStorage.setItem("twin_user", JSON.stringify(defaultUser));
+    } catch {
+      // safe fallback
+    }
+    return defaultUser;
   });
   const [loading, setLoading] = useState(false);
 
