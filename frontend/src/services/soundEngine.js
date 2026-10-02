@@ -74,6 +74,15 @@ class SoundEngine {
     }
   }
 
+  // Alias for playPing
+  playSonar() {
+    try {
+      this.playPing();
+    } catch {
+      // safe fallback
+    }
+  }
+
   // Emergency alarm klaxon / siren pulse
   playAlarm() {
     if (this.muted) return;
@@ -108,6 +117,15 @@ class SoundEngine {
       gain2.connect(this.ctx.destination);
       osc2.start(now + 0.25);
       osc2.stop(now + 0.5);
+    } catch {
+      // safe fallback
+    }
+  }
+
+  // Alias for playAlarm
+  playSiren() {
+    try {
+      this.playAlarm();
     } catch {
       // safe fallback
     }
