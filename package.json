@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "cd frontend && npm install",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
     "start": "node backend/server.js"
   },
   "dependencies": {
