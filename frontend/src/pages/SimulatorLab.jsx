@@ -82,14 +82,29 @@ export default function SimulatorLab() {
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch current station status
+  // Fetch current station status & initialize from localStorage
   useEffect(() => {
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(`digi_ai_disasters_${stationCode}`) || "[]");
+    } catch {
+      localList = [];
+    }
+    if (localList.length > 0) {
+      setActiveDisasters(localList);
+    }
+
     api
       .get(`/stations/${stationCode}/twin`)
       .then((res) => {
         const station = res.data?.station;
         const list = station?.activeDisasters || (station?.activeDisaster ? [station.activeDisaster] : []);
-        setActiveDisasters(list);
+        if (list.length > 0) {
+          setActiveDisasters(list);
+          localStorage.setItem(`digi_ai_disasters_${stationCode}`, JSON.stringify(list));
+        } else if (localList.length === 0) {
+          setActiveDisasters([]);
+        }
         setMitigationApplied(station?.mitigationApplied || null);
       })
       .catch(() => {});
@@ -107,6 +122,12 @@ export default function SimulatorLab() {
       }
       setActiveDisasters(updated);
       setMitigationApplied(null);
+      if (updated.length > 0) {
+        localStorage.setItem(`digi_ai_disasters_${stationCode}`, JSON.stringify(updated));
+      } else {
+        localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
+      }
+
       setNotice(
         updated.length > 0
           ? `🚨 Disaster state updated: [${updated.map((d) => d.toUpperCase()).join(" + ")}] active in ${stationCode}.`
@@ -132,6 +153,7 @@ export default function SimulatorLab() {
     try {
       setActiveDisasters([]);
       setMitigationApplied(null);
+      localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
       setNotice(`✅ All emergency parameters reset to nominal stability for ${stationCode}.`);
 
       await write({

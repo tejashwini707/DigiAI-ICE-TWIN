@@ -48,45 +48,46 @@ export default function ConnectivityBar() {
   return (
     <div className="space-y-2">
       <div
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 border transition-all duration-300 shadow-md"
-        style={{
-          background: isOffline ? "rgba(30, 20, 30, 0.75)" : "var(--bg-panel)",
-          borderColor: isOffline ? "rgba(255, 93, 93, 0.4)" : "var(--border-subtle)",
-        }}
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-3.5 sm:p-4 border transition-all duration-300 shadow-xl ${
+          isOffline
+            ? "bg-red-950/40 border-red-500/50 shadow-red-500/10"
+            : "ice-pane frost-border"
+        }`}
       >
         {/* Left: Satellite & Link status */}
         <div className="flex items-center gap-3">
           <div
-            className={`p-2 rounded-xl flex items-center justify-center border shrink-0 ${
+            className={`p-2.5 rounded-xl flex items-center justify-center border shrink-0 ${
               isOffline
-                ? "bg-red-500/10 text-red-400 border-red-500/30 ring-1 ring-red-500/20"
-                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                ? "bg-red-500/20 text-red-400 border-red-500/40 ring-1 ring-red-500/30"
+                : "bg-[var(--aurora-teal)]/20 text-[var(--aurora-teal)] border-[var(--aurora-teal)]/40 shadow-sm"
             }`}
           >
-            {isOffline ? <WifiOff className="w-4 h-4 animate-pulse" /> : <Wifi className="w-4 h-4" />}
+            {isOffline ? <WifiOff className="w-4 h-4 animate-pulse text-red-400" /> : <Wifi className="w-4 h-4 text-[var(--aurora-teal)]" />}
           </div>
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <span
-                className="font-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase truncate"
-                style={{ color: isOffline ? "var(--status-critical)" : "var(--status-nominal)" }}
+                className={`font-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase truncate ${
+                  isOffline ? "text-red-400" : "text-[var(--aurora-teal)]"
+                }`}
               >
                 {isOffline ? "ISRO GSAT-30 SATCOM DROPOUT" : "ISRO GSAT SATCOM ACTIVE"}
               </span>
 
               {isOffline && (
-                <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 uppercase font-bold animate-pulse">
+                <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 uppercase font-bold animate-pulse">
                   Edge Mode
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-[11px] text-[var(--text-tertiary)] mt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-[11px] text-[var(--text-tertiary)] mt-0.5 font-mono">
               <span>
                 {queueCount > 0 ? (
-                  <span className="text-amber-300 font-mono font-medium flex items-center gap-1">
-                    <span>📦 {queueCount} update{queueCount === 1 ? "" : "s"} cached locally</span>
+                  <span className="text-amber-300 font-medium flex items-center gap-1">
+                    <span>📦 {queueCount} update{queueCount === 1 ? "" : "s"} cached in IndexedDB</span>
                     <button
                       onClick={handleClearQueue}
                       className="text-[10px] underline text-amber-400/80 hover:text-amber-200 cursor-pointer ml-1"
@@ -100,7 +101,7 @@ export default function ConnectivityBar() {
                 )}
               </span>
               <span>•</span>
-              <span className="font-mono truncate">
+              <span className="truncate">
                 {syncing
                   ? "Transmitting telemetry..."
                   : `Synced: ${new Date(lastSyncedAt).toLocaleTimeString()}`}
@@ -115,18 +116,13 @@ export default function ConnectivityBar() {
           <button
             onClick={handleSyncClick}
             disabled={syncing}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            style={{
-              borderColor: isOffline ? "var(--border-subtle)" : "var(--ice-cyan)",
-              background: syncing ? "rgba(111, 231, 221, 0.15)" : "var(--bg-deep)",
-              color: isOffline ? "var(--text-secondary)" : "var(--ice-cyan)",
-            }}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-mono font-semibold px-3.5 py-2 rounded-xl border border-[var(--aurora-teal)]/50 bg-[var(--bg-panel-raised)] hover:bg-[var(--aurora-teal)]/20 text-[var(--aurora-teal)] transition-all cursor-pointer shadow-sm disabled:opacity-50"
             title="Synchronize all local telemetry, incidents, and station state with Mainland HQ"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin text-[var(--ice-cyan)]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin text-[var(--aurora-teal)]" : ""}`} />
             <span>{syncing ? "Syncing…" : "Sync now"}</span>
             {queueCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[var(--ice-cyan)] text-black font-bold">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[var(--aurora-teal)] text-black font-bold">
                 {queueCount}
               </span>
             )}
@@ -135,15 +131,14 @@ export default function ConnectivityBar() {
           {/* Simulate Disconnect Toggle */}
           <button
             onClick={() => setSimulatedOffline((v) => !v)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all cursor-pointer"
-            style={{
-              background: simulatedOffline ? "rgba(111, 231, 221, 0.2)" : "var(--bg-deep)",
-              color: simulatedOffline ? "var(--ice-cyan)" : "var(--text-secondary)",
-              border: `1px solid ${simulatedOffline ? "var(--ice-cyan)" : "var(--border-subtle)"}`,
-            }}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-mono font-medium px-3.5 py-2 rounded-xl border transition-all cursor-pointer ${
+              simulatedOffline
+                ? "bg-[var(--aurora-teal)]/20 text-[var(--aurora-teal)] border-[var(--aurora-teal)]"
+                : "ice-pane border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
+            }`}
             title="Demo control: Simulates losing ISRO GSAT satellite connection (satellite blackout)"
           >
-            <Radio className={`w-3.5 h-3.5 ${simulatedOffline ? "text-[var(--ice-cyan)] animate-spin" : ""}`} />
+            <Radio className={`w-3.5 h-3.5 ${simulatedOffline ? "text-[var(--aurora-teal)] animate-spin" : ""}`} />
             <span>{simulatedOffline ? "Restore GSAT Link" : "Simulate Drop"}</span>
           </button>
         </div>

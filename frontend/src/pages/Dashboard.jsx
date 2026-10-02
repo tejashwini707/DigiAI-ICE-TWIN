@@ -139,6 +139,19 @@ export default function Dashboard() {
     setPrediction(generateDefaultPrediction(stationCode));
   }, [stationCode]);
 
+  // Disaster persistence ref & local storage key
+  const activeDisastersRef = useRef([]);
+
+  // Sync activeDisastersRef when station changes
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(`digi_ai_disasters_${stationCode}`) || "[]");
+      activeDisastersRef.current = Array.isArray(stored) ? stored : [];
+    } catch {
+      activeDisastersRef.current = [];
+    }
+  }, [stationCode]);
+
   const loadAll = useCallback(async () => {
     try {
       const [twinRes, resRes, perRes, incRes] = await Promise.all([
@@ -149,8 +162,33 @@ export default function Dashboard() {
       ]);
 
       if (twinRes.data && twinRes.data.station) {
-        setTwin(twinRes.data);
-        if (twinRes.data.prediction) setPrediction(twinRes.data.prediction);
+        let stationData = twinRes.data.station;
+        let telemetryData = twinRes.data.telemetry || {};
+        let predictionData = twinRes.data.prediction;
+
+        // If local client has active disaster state, maintain it even if backend instance lacks it
+        const currentActive = activeDisastersRef.current || [];
+        if (currentActive.length > 0) {
+          stationData = {
+            ...stationData,
+            activeDisaster: currentActive[0],
+            activeDisasters: currentActive,
+          };
+          const edgeResult = generateOfflineTick(stationData, telemetryData);
+          stationData = edgeResult.station;
+          telemetryData = edgeResult.telemetryByZone;
+          predictionData = edgeResult.prediction;
+        } else if (stationData.activeDisasters && stationData.activeDisasters.length > 0) {
+          activeDisastersRef.current = stationData.activeDisasters;
+          localStorage.setItem(`digi_ai_disasters_${stationCode}`, JSON.stringify(stationData.activeDisasters));
+        }
+
+        setTwin({
+          station: stationData,
+          telemetry: telemetryData,
+          prediction: predictionData,
+        });
+        if (predictionData) setPrediction(predictionData);
       }
       if (resRes.data && Array.isArray(resRes.data) && resRes.data.length > 0) {
         setResources(resRes.data);
@@ -220,10 +258,20 @@ export default function Dashboard() {
   const handleTriggerDisaster = async (disasterType) => {
     soundEngine.playSiren();
 
-    const currentList = twin?.station?.activeDisasters || (twin?.station?.activeDisaster ? [twin?.station?.activeDisaster] : []);
+    const currentList = activeDisastersRef.current.length > 0
+      ? activeDisastersRef.current
+      : (twin?.station?.activeDisasters || (twin?.station?.activeDisaster ? [twin?.station?.activeDisaster] : []));
+
     const updatedList = currentList.includes(disasterType)
       ? currentList.filter((d) => d !== disasterType)
       : [...currentList, disasterType];
+
+    activeDisastersRef.current = updatedList;
+    if (updatedList.length > 0) {
+      localStorage.setItem(`digi_ai_disasters_${stationCode}`, JSON.stringify(updatedList));
+    } else {
+      localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
+    }
 
     const updatedStation = {
       ...(twin?.station || DEFAULT_STATIONS[stationCode]),
@@ -286,6 +334,8 @@ export default function Dashboard() {
   // INSTANT REACTIVE DISASTER RESOLUTION HANDLER
   const handleResolveDisaster = async () => {
     soundEngine.playSuccess();
+    activeDisastersRef.current = [];
+    localStorage.removeItem(`digi_ai_disasters_${stationCode}`);
 
     const updatedStation = {
       ...(twin?.station || DEFAULT_STATIONS[stationCode]),
