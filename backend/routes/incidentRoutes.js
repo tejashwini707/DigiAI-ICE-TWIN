@@ -3,6 +3,7 @@ import {
   listIncidents,
   createIncident,
   updateIncident,
+  dispatchAlertNotification,
 } from "../controllers/incidentController.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -10,6 +11,8 @@ const router = Router();
 
 router.get("/:code", requireAuth, listIncidents);
 router.post("/:code", requireAuth, createIncident);
+router.post("/:code/dispatch-alert", requireAuth, dispatchAlertNotification);
 router.patch("/item/:id", requireAuth, updateIncident);
 
 export default router;
+

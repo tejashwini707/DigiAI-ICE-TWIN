@@ -46,13 +46,35 @@ const INITIAL_STATIONS = [
       { zoneId: "water-plant", label: "Desalination & Lake Melt Plant", type: "water", status: "nominal", reserveLitres: 29000, flowRateLpm: 60, freezeAlert: false },
     ],
   },
+  {
+    code: "DAKSHIN_GANGOTRI",
+    name: "Dakshin Gangotri Post",
+    location: { lat: -70.0833, lng: 12.0000, region: "Princess Astrid Coast, Ice Shelf" },
+    commissioned: 1983,
+    crewCapacity: 12,
+    elevation: "0m (Ice Shelf)",
+    connectivity: { status: "online", lastSyncedAt: new Date(), latencyMs: 410, signalQuality: "Good (88%)" },
+    activeDisaster: null,
+    mitigationApplied: null,
+    zones: [
+      { zoneId: "power-plant", label: "Solar-Wind-Diesel Microgrid", type: "power", status: "nominal", loadKw: 38, capacityKw: 75, tempC: 18 },
+      { zoneId: "generator-shed", label: "Automated Kirloskar GenSet", type: "generator", status: "nominal", healthPct: 92, rpm: 1500, vibrationMm: 1.1 },
+      { zoneId: "fuel-depot", label: "Deep Ice Fuel Vault", type: "fuel", status: "nominal", flowLph: 9.8, tempC: -14, leakDetected: false },
+      { zoneId: "living-quarters", label: "Sub-Ice Observation Pod", type: "habitat", status: "nominal", internalTempC: 19.5, co2Ppm: 510, humidityPct: 35 },
+      { zoneId: "research-lab", label: "Ice Sheet Velocity & Core Vault", type: "lab", status: "nominal", internalTempC: 18.0, activeExperiments: 4 },
+      { zoneId: "comms-tower", label: "Automated V-SAT Repeater Mast", type: "comms", status: "nominal", signalDb: -72, iceLoadPct: 8 },
+      { zoneId: "medical-bay", label: "Automated Tele-First Aid Station", type: "medical", status: "nominal", internalTempC: 20.0, o2SupplyPct: 95 },
+      { zoneId: "supply-storage", label: "Sub-Ice Logistics Depot", type: "storage", status: "nominal", tempC: -12.0, doorSealed: true },
+      { zoneId: "water-plant", label: "Sub-surface Thermal Melter", type: "water", status: "nominal", reserveLitres: 12000, flowRateLpm: 22, freezeAlert: false },
+    ],
+  },
 ];
 
 const INITIAL_RESOURCES = {
   MAITRI: [
     { _id: "res-m1", stationCode: "MAITRI", category: "fuel", name: "Arctic Grade Polar Diesel (Bulk)", unit: "litres", quantity: 42000, dailyConsumptionRate: 340, reorderThresholdDays: 45 },
     { _id: "res-m2", stationCode: "MAITRI", category: "fuel", name: "Aviation Turbine Fuel (Helicopter)", unit: "litres", quantity: 8200, dailyConsumptionRate: 15, reorderThresholdDays: 60 },
-    { _id: "res-m3", stationCode: "MAITRI", category: "water", name: "Pribarshini Lake Melt Reserve", unit: "litres", quantity: 18400, dailyConsumptionRate: 920, reorderThresholdDays: 15 },
+    { _id: "res-m3", stationCode: "MAITRI", category: "water", name: "Priyadarshini Lake Melt Reserve", unit: "litres", quantity: 18400, dailyConsumptionRate: 920, reorderThresholdDays: 15 },
     { _id: "res-m4", stationCode: "MAITRI", category: "food", name: "Freeze-Dried Rations & Grains", unit: "kg", quantity: 2700, dailyConsumptionRate: 18, reorderThresholdDays: 30 },
     { _id: "res-m5", stationCode: "MAITRI", category: "medical", name: "Emergency Trauma & Antibiotics Kit", unit: "units", quantity: 380, dailyConsumptionRate: 2, reorderThresholdDays: 90 },
     { _id: "res-m6", stationCode: "MAITRI", category: "spare_parts", name: "Diesel Generator High-Flow Filters", unit: "units", quantity: 26, dailyConsumptionRate: 0.25, reorderThresholdDays: 40 },
@@ -64,6 +86,12 @@ const INITIAL_RESOURCES = {
     { _id: "res-b4", stationCode: "BHARATI", category: "food", name: "Hydroponics & Packed Provisions", unit: "kg", quantity: 4500, dailyConsumptionRate: 32, reorderThresholdDays: 30 },
     { _id: "res-b5", stationCode: "BHARATI", category: "medical", name: "Critical Care Surgical Supplies", unit: "units", quantity: 510, dailyConsumptionRate: 3, reorderThresholdDays: 90 },
     { _id: "res-b6", stationCode: "BHARATI", category: "spare_parts", name: "Wind Turbine & CHP Spares", unit: "units", quantity: 42, dailyConsumptionRate: 0.3, reorderThresholdDays: 40 },
+  ],
+  DAKSHIN_GANGOTRI: [
+    { _id: "res-dg1", stationCode: "DAKSHIN_GANGOTRI", category: "fuel", name: "Automated Polar Diesel Cache", unit: "litres", quantity: 24000, dailyConsumptionRate: 160, reorderThresholdDays: 60 },
+    { _id: "res-dg2", stationCode: "DAKSHIN_GANGOTRI", category: "water", name: "Sub-surface Melt Reserve", unit: "litres", quantity: 12000, dailyConsumptionRate: 300, reorderThresholdDays: 20 },
+    { _id: "res-dg3", stationCode: "DAKSHIN_GANGOTRI", category: "food", name: "Automated Survival Rations", unit: "kg", quantity: 1400, dailyConsumptionRate: 8, reorderThresholdDays: 45 },
+    { _id: "res-dg4", stationCode: "DAKSHIN_GANGOTRI", category: "spare_parts", name: "Autonomous Wind & Battery Spares", unit: "units", quantity: 18, dailyConsumptionRate: 0.1, reorderThresholdDays: 60 },
   ],
 };
 
@@ -84,6 +112,10 @@ const INITIAL_PERSONNEL = {
     { _id: "per-b5", stationCode: "BHARATI", name: "Karan Vohra", role: "Telecommunications Specialist", shift: "night", healthStatus: "fit", vitals: { hr: 71, spo2: 98, temp: 36.7 }, lastCheckInAt: new Date() },
     { _id: "per-b6", stationCode: "BHARATI", name: "Sana Qureshi", role: "Life Support & Water Engineer", shift: "night", healthStatus: "fit", vitals: { hr: 67, spo2: 99, temp: 36.6 }, lastCheckInAt: new Date() },
   ],
+  DAKSHIN_GANGOTRI: [
+    { _id: "per-dg1", stationCode: "DAKSHIN_GANGOTRI", name: "Dr. Somesh Banerjee", role: "Post Custodian & Meteorologist", shift: "day", healthStatus: "fit", vitals: { hr: 69, spo2: 98, temp: 36.7 }, lastCheckInAt: new Date() },
+    { _id: "per-dg2", stationCode: "DAKSHIN_GANGOTRI", name: "Harpreet Singh", role: "Telemetry & Power Technician", shift: "night", healthStatus: "fit", vitals: { hr: 72, spo2: 99, temp: 36.6 }, lastCheckInAt: new Date() },
+  ],
 };
 
 const INITIAL_INCIDENTS = {
@@ -98,6 +130,8 @@ const INITIAL_INCIDENTS = {
       status: "resolved",
       reportedBy: "Suresh Nair (Chief Engineer)",
       createdAt: new Date(Date.now() - 1000 * 60 * 180),
+      eventHash: "sha256-e4a8b2...99f0",
+      seqNo: 1042,
     },
   ],
   BHARATI: [
@@ -111,6 +145,23 @@ const INITIAL_INCIDENTS = {
       status: "resolved",
       reportedBy: "Karan Vohra (SAT Officer)",
       createdAt: new Date(Date.now() - 1000 * 60 * 300),
+      eventHash: "sha256-b7f3c1...88a2",
+      seqNo: 1043,
+    },
+  ],
+  DAKSHIN_GANGOTRI: [
+    {
+      _id: "inc-dg1",
+      stationCode: "DAKSHIN_GANGOTRI",
+      zoneId: "power-plant",
+      title: "Autonomous Microgrid Battery Cycle",
+      description: "Winter-season deep cycle test passed with 99.2% charge retention.",
+      severity: "info",
+      status: "resolved",
+      reportedBy: "Automated Telemetry Controller",
+      createdAt: new Date(Date.now() - 1000 * 60 * 600),
+      eventHash: "sha256-c1d9f8...77e4",
+      seqNo: 1044,
     },
   ],
 };
@@ -125,8 +176,10 @@ class DataStore {
     this.telemetryBuffer = {
       MAITRI: {},
       BHARATI: {},
+      DAKSHIN_GANGOTRI: {},
     };
   }
+
 
   getStations() {
     return this.stations;

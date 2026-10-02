@@ -1,5 +1,23 @@
 import { useState, useMemo } from "react";
-import { Cpu, Eye, Radio, Shield, AlertCircle, Info, Sparkles, Flame, EyeOff } from "lucide-react";
+import {
+  Cpu,
+  Eye,
+  Radio,
+  Shield,
+  AlertCircle,
+  Info,
+  Sparkles,
+  Flame,
+  Layers,
+  Activity,
+  Wifi,
+  X,
+  Gauge,
+  Power,
+  Thermometer,
+  Droplet,
+  CheckCircle2,
+} from "lucide-react";
 
 const STATUS_COLOR = {
   nominal: "#4ADE80",
@@ -9,15 +27,141 @@ const STATUS_COLOR = {
 };
 
 const LAYOUT = {
-  "power-plant":     { x: 35,  y: 50,  w: 140, h: 90,  shape: "rect", icon: "⚡", label: "Power Plant", subtitle: "Grid Bus & Inverters", temp: "22°C" },
-  "generator-shed":  { x: 35,  y: 170, w: 140, h: 80,  shape: "rect", icon: "⚙", label: "GenSet Cluster", subtitle: "Diesel Units #1-#3", temp: "68°C" },
-  "fuel-depot":      { x: 35,  y: 275, w: 140, h: 80,  shape: "rect", icon: "⛽", label: "Fuel Storage", subtitle: "Polar Grade Bulk", temp: "-12°C" },
-  "living-quarters": { x: 215, y: 50,  w: 180, h: 120, shape: "rect", icon: "🏠", label: "Living Habitat", subtitle: "Berths, Mess & Life Support", temp: "20°C" },
-  "research-lab":    { x: 215, y: 195, w: 180, h: 85,  shape: "rect", icon: "🔬", label: "Research Lab", subtitle: "Atmospheric & Ice Cores", temp: "18°C" },
-  "medical-bay":     { x: 215, y: 305, w: 180, h: 75,  shape: "rect", icon: "✚", label: "Medical Bay", subtitle: "Surgical & Telemedicine", temp: "22°C" },
-  "comms-tower":     { x: 440, y: 40,  w: 70,  h: 70,  shape: "circle", icon: "📡", label: "SATCOM Tower", subtitle: "GSAT Array & Uplink", temp: "-28°C" },
-  "supply-storage":  { x: 430, y: 145, w: 155, h: 100, shape: "rect", icon: "📦", label: "Cryo Warehouse", subtitle: "Rations & Spares Depot", temp: "-18°C" },
-  "water-plant":     { x: 430, y: 275, w: 155, h: 95,  shape: "rect", icon: "💧", label: "Water Plant", subtitle: "Lake Melt Intake & RO", temp: "4°C" },
+  "power-plant": {
+    x: 35,
+    y: 50,
+    w: 140,
+    h: 90,
+    shape: "rect",
+    icon: "⚡",
+    label: "Power Plant",
+    subtitle: "Grid Bus & Inverters",
+    temp: "22.4°C",
+    tempVal: 22.4,
+    powerLoad: "48.2 kW",
+    latency: "1.2 ms",
+    specs: "3x 60kW Synchronous Inverters · 415V 3-Phase Bus",
+  },
+  "generator-shed": {
+    x: 35,
+    y: 170,
+    w: 140,
+    h: 80,
+    shape: "rect",
+    icon: "⚙",
+    label: "GenSet Cluster",
+    subtitle: "Diesel Units #1-#3",
+    temp: "68.5°C",
+    tempVal: 68.5,
+    powerLoad: "36.8 kW",
+    latency: "2.1 ms",
+    specs: "Kirloskar Polar-Grade Diesels · Auto-Failover Matrix",
+  },
+  "fuel-depot": {
+    x: 35,
+    y: 275,
+    w: 140,
+    h: 80,
+    shape: "rect",
+    icon: "⛽",
+    label: "Fuel Storage",
+    subtitle: "Polar Grade Bulk",
+    temp: "-12.0°C",
+    tempVal: -12.0,
+    powerLoad: "2.4 kW",
+    latency: "3.4 ms",
+    specs: "4x 20,000L Double-Walled Cryo Tanks with Thermal Jackets",
+  },
+  "living-quarters": {
+    x: 215,
+    y: 50,
+    w: 180,
+    h: 120,
+    shape: "rect",
+    icon: "🏠",
+    label: "Living Habitat",
+    subtitle: "Berths, Mess & Life Support",
+    temp: "20.8°C",
+    tempVal: 20.8,
+    powerLoad: "18.5 kW",
+    latency: "0.8 ms",
+    specs: "25 Berths · HVAC Air Filtration · Thermal Double-Insulation",
+  },
+  "research-lab": {
+    x: 215,
+    y: 195,
+    w: 180,
+    h: 85,
+    shape: "rect",
+    icon: "🔬",
+    label: "Research Lab",
+    subtitle: "Atmospheric & Ice Cores",
+    temp: "18.2°C",
+    tempVal: 18.2,
+    powerLoad: "14.1 kW",
+    latency: "0.6 ms",
+    specs: "Mass Spectrometry · Ice Core Cryo Vault · Geomagnetic Rig",
+  },
+  "medical-bay": {
+    x: 215,
+    y: 305,
+    w: 180,
+    h: 75,
+    shape: "rect",
+    icon: "✚",
+    label: "Medical Bay",
+    subtitle: "Surgical & Telemedicine",
+    temp: "22.0°C",
+    tempVal: 22.0,
+    powerLoad: "6.3 kW",
+    latency: "0.9 ms",
+    specs: "Hyperbaric Chamber · Telemedicine SATCOM Link · Trauma Unit",
+  },
+  "comms-tower": {
+    x: 440,
+    y: 40,
+    w: 70,
+    h: 70,
+    shape: "circle",
+    icon: "📡",
+    label: "SATCOM Tower",
+    subtitle: "GSAT Array & Uplink",
+    temp: "-28.4°C",
+    tempVal: -28.4,
+    powerLoad: "8.9 kW",
+    latency: "420 ms",
+    specs: "2.4m C/Ku-Band Steerable Radome · ISRO GSAT-30 Feeder",
+  },
+  "supply-storage": {
+    x: 430,
+    y: 145,
+    w: 155,
+    h: 100,
+    shape: "rect",
+    icon: "📦",
+    label: "Cryo Warehouse",
+    subtitle: "Rations & Spares Depot",
+    temp: "-18.5°C",
+    tempVal: -18.5,
+    powerLoad: "5.1 kW",
+    latency: "4.2 ms",
+    specs: "Freeze-Dried Rations · Spares Inventory · Cold Storage",
+  },
+  "water-plant": {
+    x: 430,
+    y: 275,
+    w: 155,
+    h: 95,
+    shape: "rect",
+    icon: "💧",
+    label: "Water Plant",
+    subtitle: "Lake Melt Intake & RO",
+    temp: "4.5°C",
+    tempVal: 4.5,
+    powerLoad: "12.0 kW",
+    latency: "1.8 ms",
+    specs: "Priydarshini Melt Intake · Reverse Osmosis · Trace Heaters",
+  },
 };
 
 const DEFAULT_ZONES = [
@@ -32,7 +176,7 @@ const DEFAULT_ZONES = [
   { zoneId: "water-plant", label: "Water Treatment & Melt Intake", type: "water", status: "nominal" },
 ];
 
-function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
+function ZoneShape({ zone, layout, onSelect, selected, activeLayer }) {
   const status = zone?.status || "nominal";
   const color = STATUS_COLOR[status] || STATUS_COLOR.nominal;
   const isCircle = layout.shape === "circle";
@@ -42,33 +186,43 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
   const isCritical = status === "critical";
   const isWarning = status === "warning";
 
-  // FLIR Thermal Color Fill
+  // FLIR Thermal Color Gradient Fill
   const flirFill =
-    layout.zoneId === "generator-shed"
-      ? "rgba(239, 68, 68, 0.45)"
-      : layout.temp?.includes("-")
-      ? "rgba(59, 130, 246, 0.45)"
-      : "rgba(245, 158, 11, 0.4)";
+    layout.tempVal > 50
+      ? "rgba(239, 68, 68, 0.55)"
+      : layout.tempVal > 20
+      ? "rgba(245, 158, 11, 0.45)"
+      : layout.tempVal > 0
+      ? "rgba(16, 185, 129, 0.35)"
+      : "rgba(59, 130, 246, 0.5)";
+
+  // Network Layer Fill
+  const networkFill = isSelected
+    ? "rgba(155, 140, 255, 0.3)"
+    : "rgba(15, 23, 42, 0.85)";
 
   return (
     <g
       onClick={() => onSelect(zone.zoneId)}
       className="cursor-pointer transition-all duration-200 group"
-      opacity={selected && !isSelected ? 0.45 : 1}
+      opacity={selected && !isSelected ? 0.35 : 1}
     >
-      {/* Zone Background Box with Glow */}
+      {/* Zone Background Shape */}
       {isCircle ? (
         <>
           {isCritical && (
-            <circle cx={cx} cy={cy} r={layout.w / 2 + 6} fill="none" stroke="#FF5D5D" strokeWidth="2" opacity="0.6" className="animate-ping" />
+            <circle cx={cx} cy={cy} r={layout.w / 2 + 8} fill="none" stroke="#FF5D5D" strokeWidth="2.5" opacity="0.7" className="animate-ping" />
+          )}
+          {activeLayer === "network" && (
+            <circle cx={cx} cy={cy} r={layout.w / 2 + 5} fill="none" stroke="#9B8CFF" strokeWidth="1.5" strokeDasharray="3 3" className="animate-spin" style={{ animationDuration: "12s" }} />
           )}
           <circle
             cx={cx}
             cy={cy}
             r={layout.w / 2}
-            fill={flirMode ? flirFill : "var(--bg-panel-raised)"}
-            stroke={color}
-            strokeWidth={isSelected ? 3 : 1.8}
+            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "var(--bg-panel-raised)"}
+            stroke={isSelected ? "var(--ice-cyan)" : activeLayer === "network" ? "#9B8CFF" : color}
+            strokeWidth={isSelected ? 3.5 : 2}
             className="group-hover:stroke-[var(--ice-cyan)] transition"
           />
         </>
@@ -80,11 +234,11 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
               y={layout.y - 4}
               width={layout.w + 8}
               height={layout.h + 8}
-              rx={10}
+              rx={12}
               fill="none"
               stroke="#FF5D5D"
-              strokeWidth="2"
-              opacity="0.6"
+              strokeWidth="2.5"
+              opacity="0.7"
               className="animate-pulse"
             />
           )}
@@ -93,12 +247,19 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
             y={layout.y}
             width={layout.w}
             height={layout.h}
-            rx={8}
-            fill={flirMode ? flirFill : "var(--bg-panel-raised)"}
-            stroke={color}
+            rx={9}
+            fill={activeLayer === "flir" ? flirFill : activeLayer === "network" ? networkFill : "var(--bg-panel-raised)"}
+            stroke={isSelected ? "var(--ice-cyan)" : activeLayer === "network" ? "#9B8CFF" : color}
             strokeWidth={isSelected ? 3 : 1.8}
             className="group-hover:stroke-[var(--ice-cyan)] transition"
           />
+          {/* Engineering CAD Corner Crosshairs */}
+          {activeLayer === "cad" && (
+            <g stroke="var(--border-frozen)" strokeWidth="1" opacity="0.6">
+              <line x1={layout.x + 2} y1={layout.y + 6} x2={layout.x + 10} y2={layout.y + 6} />
+              <line x1={layout.x + 6} y1={layout.y + 2} x2={layout.x + 6} y2={layout.y + 10} />
+            </g>
+          )}
         </>
       )}
 
@@ -115,9 +276,9 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
       {/* Icon */}
       <text
         x={cx}
-        y={isCircle ? cy - 2 : layout.y + 36}
+        y={isCircle ? cy - 4 : layout.y + 36}
         textAnchor="middle"
-        fontSize="16"
+        fontSize="17"
         fontFamily="var(--font-mono)"
         fill="var(--text-primary)"
       >
@@ -127,9 +288,9 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
       {/* Label */}
       <text
         x={cx}
-        y={isCircle ? cy + 18 : layout.y + 56}
+        y={isCircle ? cy + 16 : layout.y + 56}
         textAnchor="middle"
-        fontSize="11"
+        fontSize="11.5"
         fontFamily="var(--font-display)"
         fill="var(--text-primary)"
         fontWeight="600"
@@ -137,18 +298,30 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
         {zone.label || layout.label}
       </text>
 
-      {/* Subtitle / Thermal Reading */}
+      {/* Subtitle / Layer Specific Text */}
       {!isCircle && (
         <text
           x={cx}
           y={layout.y + 70}
           textAnchor="middle"
-          fontSize="8.5"
+          fontSize="9"
           fontFamily="var(--font-mono)"
-          fill={flirMode ? "var(--ice-cyan)" : "var(--text-tertiary)"}
-          fontWeight={flirMode ? "bold" : "normal"}
+          fill={
+            activeLayer === "flir"
+              ? layout.tempVal > 50
+                ? "#FCA5A5"
+                : "#6FE7DD"
+              : activeLayer === "network"
+              ? "#C4B5FD"
+              : "var(--text-tertiary)"
+          }
+          fontWeight={activeLayer !== "cad" ? "bold" : "normal"}
         >
-          {flirMode ? `FLIR Temp: ${layout.temp}` : layout.subtitle}
+          {activeLayer === "flir"
+            ? `FLIR IR: ${layout.temp}`
+            : activeLayer === "network"
+            ? `Bus Latency: ${layout.latency}`
+            : layout.subtitle}
         </text>
       )}
 
@@ -157,7 +330,7 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
         x={layout.x + layout.w - 10}
         y={layout.y + 15}
         textAnchor="end"
-        fontSize="8"
+        fontSize="8.5"
         fontFamily="var(--font-mono)"
         fontWeight="bold"
         fill={color}
@@ -168,16 +341,24 @@ function ZoneShape({ zone, layout, onSelect, selected, flirMode }) {
   );
 }
 
-export default function StationTwin({ station, isOffline, selectedZone, onSelectZone }) {
-  const [flirMode, setFlirMode] = useState(false);
+export default function StationTwin({ station, isOffline, selectedZone, onSelectZone, telemetryByZone }) {
+  const [activeLayer, setActiveLayer] = useState("cad"); // 'cad' | 'flir' | 'network'
 
   const zones = useMemo(() => {
     if (station?.zones && station.zones.length > 0) return station.zones;
     return DEFAULT_ZONES;
   }, [station]);
 
+  const selectedZoneData = useMemo(() => {
+    if (!selectedZone) return null;
+    return zones.find((z) => z.zoneId === selectedZone) || { zoneId: selectedZone, label: selectedZone, status: "nominal" };
+  }, [selectedZone, zones]);
+
+  const selectedLayout = LAYOUT[selectedZone] || {};
+  const selectedZoneReadings = telemetryByZone?.[selectedZone] || [];
+
   const isBlizzard = station?.activeDisaster === "blizzard";
-  const stationName = station?.name || "Maitri Station";
+  const stationName = station?.name || "Maitri Research Station";
   const lat = station?.location?.lat ?? -70.7669;
   const lng = station?.location?.lng ?? 11.7333;
   const region = station?.location?.region || "Schirmacher Oasis, Queen Maud Land";
@@ -193,10 +374,10 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--ice-cyan)] bg-[var(--bg-panel-raised)] px-2 py-0.5 rounded border border-[var(--ice-cyan-dim)]">
-                Live 2D Physics Schematic &amp; FLIR Thermal Twin
+                {activeLayer === "cad" ? "Physical CAD Schematic" : activeLayer === "flir" ? "FLIR Infra-Red Thermal Twin" : "RF & Network Bus Topology"}
               </span>
               <h3 className="font-display text-base sm:text-lg font-semibold text-[var(--text-primary)]">
-                {stationName} Digital Twin Schematic
+                {stationName} Digital Twin
               </h3>
             </div>
             <p className="font-mono text-xs text-[var(--text-tertiary)] mt-0.5">
@@ -204,22 +385,50 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
             </p>
           </div>
 
-          {/* FLIR IR Heatmap Toggle & Connectivity State */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setFlirMode((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold transition cursor-pointer ${
-                flirMode
-                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm"
-                  : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-              title="Toggle FLIR Infra-Red Thermal Heatmap View Mode"
-            >
-              <Flame className={`w-3.5 h-3.5 ${flirMode ? "text-amber-400 animate-pulse" : ""}`} />
-              <span>{flirMode ? "FLIR Thermal: ON" : "FLIR Thermal: OFF"}</span>
-            </button>
+          {/* Layer Selector Buttons & Connectivity State */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-0.5">
+              <button
+                onClick={() => setActiveLayer("cad")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg font-mono text-xs font-semibold transition cursor-pointer ${
+                  activeLayer === "cad"
+                    ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
+                    : "text-[var(--text-secondary)] hover:text-white"
+                }`}
+                title="Physical Blueprint & Conduits"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Physical CAD</span>
+              </button>
 
-            <div className="flex items-center gap-2.5 font-mono text-xs">
+              <button
+                onClick={() => setActiveLayer("flir")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg font-mono text-xs font-semibold transition cursor-pointer ${
+                  activeLayer === "flir"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/50"
+                    : "text-[var(--text-secondary)] hover:text-white"
+                }`}
+                title="Infra-Red Thermal Heat Dissipation"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>FLIR Thermal</span>
+              </button>
+
+              <button
+                onClick={() => setActiveLayer("network")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg font-mono text-xs font-semibold transition cursor-pointer ${
+                  activeLayer === "network"
+                    ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+                    : "text-[var(--text-secondary)] hover:text-white"
+                }`}
+                title="Network Packet Routing & SATCOM Uplink"
+              >
+                <Wifi className="w-3.5 h-3.5" />
+                <span>Network &amp; RF</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 font-mono text-xs pl-2 border-l border-[var(--border-subtle)]">
               <span
                 className={`w-2.5 h-2.5 rounded-full ${isOffline ? "bg-cyan-400 animate-pulse" : "bg-emerald-400 animate-ping"}`}
               />
@@ -227,86 +436,210 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
                 className="font-bold tracking-wide hidden sm:inline"
                 style={{ color: isOffline ? "var(--ice-cyan)" : "var(--status-nominal)" }}
               >
-                {isOffline ? "AUTONOMOUS EDGE TWIN" : "LIVE STREAMING"}
+                {isOffline ? "AUTONOMOUS EDGE" : "LIVE 2D TWIN"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* SVG Canvas for Station Digital Twin */}
-        <div className="relative bg-[var(--bg-deep)] rounded-xl p-2 border border-[var(--border-subtle)] overflow-hidden">
-          {/* Animated Power Bus Grid Lines */}
-          <svg
-            viewBox="0 0 620 410"
-            className="w-full h-auto select-none"
-            role="img"
-            aria-label={`${stationName} station schematic`}
-          >
-            <defs>
-              {/* Power Flow animated pattern */}
-              <pattern id="powerGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1" fill="#1F2937" />
-              </pattern>
-            </defs>
+        {/* Main Twin Body with Slide-In Diagnostic Drawer */}
+        <div className="relative bg-[var(--bg-deep)] rounded-xl border border-[var(--border-subtle)] overflow-hidden">
+          {/* SVG Canvas for Station Digital Twin */}
+          <div className="p-2 w-full overflow-hidden">
+            <svg
+              viewBox="0 0 620 410"
+              className="w-full h-auto select-none"
+              role="img"
+              aria-label={`${stationName} station schematic`}
+            >
+              <defs>
+                {/* Engineering Dot Grid */}
+                <pattern id="twinGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="1" fill="#1F2937" />
+                </pattern>
+                {/* FLIR Heatmap Pattern */}
+                <radialGradient id="flirHeatGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
+                  <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.05" />
+                </radialGradient>
+              </defs>
 
-            {/* Background Grid */}
-            <rect width="620" height="410" fill="url(#powerGrid)" />
+              {/* Background Grid */}
+              <rect width="620" height="410" fill="url(#twinGrid)" />
 
-            {/* Power Flow Interconnection Lines */}
-            <g opacity="0.75">
-              {/* Power Plant to GenShed */}
-              <line x1="105" y1="140" x2="105" y2="170" stroke="#F4A93B" strokeWidth="2.5" strokeDasharray="4 3" />
-              {/* GenShed to Fuel Depot */}
-              <line x1="105" y1="250" x2="105" y2="275" stroke="#FB923C" strokeWidth="2" strokeDasharray="4 3" />
-              {/* Power Plant to Habitat */}
-              <path d="M 175 95 L 215 95" stroke="#6FE7DD" strokeWidth="2.5" strokeDasharray="4 3" />
-              {/* Habitat to Research Lab */}
-              <line x1="305" y1="170" x2="305" y2="195" stroke="#6FE7DD" strokeWidth="2" strokeDasharray="4 3" />
-              {/* Research Lab to Medical Bay */}
-              <line x1="305" y1="280" x2="305" y2="305" stroke="#6FE7DD" strokeWidth="2" strokeDasharray="4 3" />
-              {/* Habitat to Comms */}
-              <path d="M 395 90 L 440 75" stroke="#9B8CFF" strokeWidth="2" strokeDasharray="4 3" />
-              {/* Habitat to Water Plant */}
-              <path d="M 395 130 L 415 130 L 415 320 L 430 320" fill="none" stroke="#60A5FA" strokeWidth="2" strokeDasharray="4 3" />
-            </g>
+              {/* Conduits & Flow Lines */}
+              <g>
+                {/* Power Conduits (Amber / Electric Cyan) */}
+                <line x1="105" y1="140" x2="105" y2="170" stroke="#F4A93B" strokeWidth="3" className="flow-line-power" />
+                <line x1="105" y1="250" x2="105" y2="275" stroke="#FB923C" strokeWidth="2.5" className="flow-line-fuel" />
+                <path d="M 175 95 L 215 95" stroke="#6FE7DD" strokeWidth="3" className="flow-line-power" />
+                <line x1="305" y1="170" x2="305" y2="195" stroke="#6FE7DD" strokeWidth="2.5" className="flow-line-power" />
+                <line x1="305" y1="280" x2="305" y2="305" stroke="#6FE7DD" strokeWidth="2.5" className="flow-line-power" />
 
-            {/* Render 9 Station Zones */}
-            {zones.map((zone) => {
-              const layout = LAYOUT[zone.zoneId];
-              if (!layout) return null;
-              return (
-                <ZoneShape
-                  key={zone.zoneId}
-                  zone={zone}
-                  layout={layout}
-                  onSelect={onSelectZone}
-                  selected={selectedZone}
-                  flirMode={flirMode}
-                />
-              );
-            })}
-          </svg>
+                {/* SATCOM / Comms Data Bus (Violet) */}
+                <path d="M 395 90 L 440 75" stroke="#9B8CFF" strokeWidth="2.5" className="flow-line-network" />
 
-          {/* FLIR Thermal Overlay Indicator */}
-          {flirMode && (
-            <div className="absolute top-3 right-3 bg-amber-950/80 border border-amber-500 px-3 py-1 rounded-lg text-amber-300 font-mono text-[10px] font-bold flex items-center gap-1.5 shadow-lg animate-pulse">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              <span>FLIR IR HEATMAP DISSIPATION VIEW</span>
+                {/* Water Glycol Melt Pipe (Blue) */}
+                <path d="M 395 130 L 415 130 L 415 320 L 430 320" fill="none" stroke="#60A5FA" strokeWidth="2.5" className="flow-line-water" />
+
+                {/* Network Layer: Additional Module-to-Module RF Routing Paths */}
+                {activeLayer === "network" && (
+                  <g stroke="#9B8CFF" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.6">
+                    <line x1="475" y1="110" x2="475" y2="145" />
+                    <line x1="305" y1="170" x2="430" y2="195" />
+                    <line x1="175" y1="95" x2="440" y2="75" />
+                  </g>
+                )}
+              </g>
+
+              {/* Render 9 Station Zones */}
+              {zones.map((zone) => {
+                const layout = LAYOUT[zone.zoneId];
+                if (!layout) return null;
+                return (
+                  <ZoneShape
+                    key={zone.zoneId}
+                    zone={zone}
+                    layout={layout}
+                    onSelect={onSelectZone}
+                    selected={selectedZone}
+                    activeLayer={activeLayer}
+                  />
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* Layer Specific Overlays */}
+          {activeLayer === "flir" && (
+            <div className="absolute top-3 right-3 bg-amber-950/85 border border-amber-500 px-3 py-1.5 rounded-xl text-amber-300 font-mono text-[10px] font-bold flex items-center gap-2 shadow-xl animate-pulse">
+              <Flame className="w-4 h-4 text-amber-400" />
+              <div>
+                <p>FLIR IR CALIBRATION: ACTIVE</p>
+                <p className="text-[9px] text-amber-200/80 font-normal">Heat Range: -28.4°C to +68.5°C</p>
+              </div>
+            </div>
+          )}
+
+          {activeLayer === "network" && (
+            <div className="absolute top-3 right-3 bg-violet-950/85 border border-violet-500 px-3 py-1.5 rounded-xl text-violet-200 font-mono text-[10px] font-bold flex items-center gap-2 shadow-xl">
+              <Radio className="w-4 h-4 text-violet-400 animate-spin" />
+              <div>
+                <p>ISRO GSAT-30 UPLINK MESH: ONLINE</p>
+                <p className="text-[9px] text-violet-300/80 font-normal">Packet Latency: ~420ms | Bandwidth: 15 Mbps</p>
+              </div>
             </div>
           )}
 
           {/* Blizzard atmospheric snow effect if blizzard disaster active */}
           {isBlizzard && (
             <div className="absolute inset-0 pointer-events-none bg-cyan-400/5 border border-cyan-300/30 flex items-center justify-center">
-              <div className="bg-cyan-950/80 border border-cyan-400 px-3 py-1.5 rounded-xl text-cyan-300 font-mono text-xs flex items-center gap-2 animate-pulse">
-                <Sparkles className="w-4 h-4" />
-                <span>POLAR BLIZZARD ACTIVE (WIND GUSTS 145 KM/H)</span>
+              <div className="bg-cyan-950/90 border border-cyan-400 px-4 py-2 rounded-xl text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-2xl animate-pulse">
+                <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
+                <span>POLAR BLIZZARD CAT-5 DETECTED (GUSTS 145 KM/H · PERIMETER SEAL ENGAGED)</span>
+              </div>
+            </div>
+          )}
+
+          {/* Slide-In Diagnostic Detail Drawer (Keeps Twin Visible!) */}
+          {selectedZone && selectedZoneData && (
+            <div className="absolute top-0 right-0 bottom-0 w-full sm:w-80 md:w-96 bg-[var(--bg-panel)]/95 backdrop-blur-md border-l border-[var(--ice-cyan)]/40 p-4 sm:p-5 flex flex-col justify-between shadow-2xl z-20 animate-fadeIn overflow-y-auto">
+              <div>
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{selectedLayout.icon || "⚡"}</span>
+                    <div>
+                      <h4 className="font-display font-bold text-sm text-white">
+                        {selectedZoneData.label || selectedLayout.label}
+                      </h4>
+                      <p className="font-mono text-[10px] text-[var(--ice-cyan)] uppercase">
+                        Module Type: {selectedZoneData.type || "zone"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onSelectZone(null)}
+                    className="p-1 rounded-lg hover:bg-[var(--bg-panel-raised)] text-[var(--text-tertiary)] hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Subsystem Specifications */}
+                <div className="p-2.5 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] mb-3 text-[11px] text-[var(--text-secondary)]">
+                  <p className="font-mono text-[9px] uppercase text-[var(--text-tertiary)] mb-1">Architectural Spec</p>
+                  <p>{selectedLayout.specs || "Standard Polar Hardened Module Architecture."}</p>
+                </div>
+
+                {/* Key Status Indicators */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                    <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Status</p>
+                    <p
+                      className="font-mono text-xs font-bold mt-0.5 uppercase"
+                      style={{ color: STATUS_COLOR[selectedZoneData.status] || STATUS_COLOR.nominal }}
+                    >
+                      {selectedZoneData.status || "nominal"}
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                    <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Temperature</p>
+                    <p className="font-mono text-xs font-bold text-amber-300 mt-0.5">
+                      {selectedLayout.temp || "21.0°C"}
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                    <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Power Draw</p>
+                    <p className="font-mono text-xs font-bold text-[var(--ice-cyan)] mt-0.5">
+                      {selectedLayout.powerLoad || "12.5 kW"}
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
+                    <p className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase">Bus Latency</p>
+                    <p className="font-mono text-xs font-bold text-violet-300 mt-0.5">
+                      {selectedLayout.latency || "1.0 ms"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Live Diagnostic Sensors */}
+                {selectedZoneReadings.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    <p className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase">Live Telemetry Sensors</p>
+                    {selectedZoneReadings.slice(0, 4).map((r, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-xs">
+                        <span className="text-[var(--text-secondary)] capitalize">{r.metric.replace(/_/g, " ")}</span>
+                        <span className="font-mono font-bold text-[var(--ice-cyan)]">{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Drawer Footer Controls */}
+              <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
+                  <span>Aux Trace Heater</span>
+                  <span className="text-emerald-400 font-bold">ENGAGED</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
+                  <span>Failover Isolation Loop</span>
+                  <span className="text-cyan-400 font-bold">READY</span>
+                </div>
+                <button
+                  onClick={() => onSelectZone(null)}
+                  className="w-full py-2 rounded-xl bg-[var(--bg-panel-raised)] hover:bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] transition cursor-pointer"
+                >
+                  Close Inspection Drawer
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Mobile Quick Zone Selector Pills (for 100% reliable 1-tap touch access on phones) */}
+        {/* Mobile Quick Zone Selector Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:hidden scrollbar-none">
           <span className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase whitespace-nowrap shrink-0">
             Quick Zone Tap:
@@ -351,11 +684,10 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           </div>
 
           <p className="text-[10px] sm:text-[11px] text-[var(--text-tertiary)] italic">
-            Tap any module to inspect diagnostic equipment telemetry
+            Tap any module to inspect real-time CAD diagnostics &amp; live telemetry
           </p>
         </div>
       </div>
     </div>
   );
 }
-
