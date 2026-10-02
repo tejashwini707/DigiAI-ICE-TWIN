@@ -30,8 +30,19 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-html, body, #root {
-  height: 100%;
+html {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+body, #root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
   background: var(--bg-deep);
   color: var(--text-primary);
   font-family: var(--font-body);
@@ -48,7 +59,7 @@ body {
   color: var(--bg-deep);
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-panel); }
 ::-webkit-scrollbar-thumb { background: var(--border-frozen); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--ice-cyan-dim); }

@@ -33,17 +33,35 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  Cpu,
+  Layers,
+  Activity,
+  BrainCircuit,
+  Package,
+  Users,
+  Shield,
+  Menu,
 } from "lucide-react";
 
 const STATIONS = [
-  { code: "MAITRI", label: "Maitri Station (70°S)", region: "Schirmacher Oasis" },
-  { code: "BHARATI", label: "Bharati Station (69°S)", region: "Larsemann Hills" },
+  { code: "MAITRI", label: "Maitri (70°S)", fullLabel: "Maitri Station (70°S)", region: "Schirmacher Oasis" },
+  { code: "BHARATI", label: "Bharati (69°S)", fullLabel: "Bharati Station (69°S)", region: "Larsemann Hills" },
+];
+
+const MOBILE_VIEWS = [
+  { id: "all", label: "All Panels", icon: Layers },
+  { id: "twin", label: "Station Twin", icon: Cpu },
+  { id: "telemetry", label: "Telemetry", icon: Activity },
+  { id: "prediction", label: "AI Risk Engine", icon: BrainCircuit },
+  { id: "satcom", label: "Satcom & Cargo", icon: Package },
+  { id: "crew", label: "Crew & Logs", icon: Users },
 ];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { isOffline, write, addSyncListener } = useConnectivity();
   const [stationCode, setStationCode] = useState(user?.stationCode || "MAITRI");
+  const [mobileView, setMobileView] = useState("all");
 
   const [twin, setTwin] = useState(() => ({
     station: DEFAULT_STATIONS[user?.stationCode || "MAITRI"] || DEFAULT_STATIONS.MAITRI,
@@ -165,71 +183,6 @@ export default function Dashboard() {
 
     return () => clearInterval(edgeInterval);
   }, [isOffline, stationCode, write]);
-
-  // Trigger Disaster Scenario with audio alert
-  const handleTriggerDisaster = async (disasterType) => {
-    soundEngine.playAlarm();
-    const disasterTitles = {
-      battery_drain: "🚨 CRITICAL: Inverter Overload & High Battery Drain Rate",
-      generator_failure: "🚨 CRITICAL: Primary Diesel Generator #1 Mechanical Stall",
-      blizzard: "🚨 CRITICAL: Category 4 Polar Katabatic Storm Incoming (145 km/h)",
-      comms_blackout: "📡 WARNING: ISRO GSAT-30 / GSAT-14 Satellite Uplink Dropout & Dish Ice Lock",
-      water_freeze: "💧 WARNING: Sub-zero Glacial Melt Intake Blockage",
-    };
-
-    const currentList = twin?.station?.activeDisasters || (twin?.station?.activeDisaster ? [twin.station.activeDisaster] : []);
-    let updatedDisasters;
-    if (currentList.includes(disasterType)) {
-      updatedDisasters = currentList.filter((d) => d !== disasterType);
-    } else {
-      updatedDisasters = [...currentList, disasterType];
-    }
-
-    const newIncident = {
-      _id: `inc-local-${Date.now()}`,
-      stationCode,
-      zoneId: disasterType === "battery_drain" ? "power-plant" : disasterType === "generator_failure" ? "generator-shed" : disasterType === "blizzard" ? "living-quarters" : disasterType === "water_freeze" ? "water-plant" : "comms-tower",
-      title: disasterTitles[disasterType] || `Disaster Triggered: ${disasterType}`,
-      description: `Sensor alarm triggered disaster scenario [${disasterType}]. Active count: ${updatedDisasters.length}. AI Prediction analyzing compound failure mode.`,
-      severity: "critical",
-      status: "open",
-      reportedBy: "AI Telemetry Anomaly Guard (Edge AI)",
-      createdAt: new Date(),
-    };
-
-    setIncidents((prev) => [newIncident, ...prev]);
-
-    setTwin((prev) => {
-      const updatedStation = {
-        ...prev.station,
-        activeDisaster: updatedDisasters[0] || null,
-        activeDisasters: updatedDisasters,
-        mitigationApplied: null,
-      };
-      const result = generateOfflineTick(updatedStation, prev.telemetry);
-      setPrediction(result.prediction);
-      return {
-        ...prev,
-        station: result.station,
-        telemetry: result.telemetryByZone,
-        prediction: result.prediction,
-      };
-    });
-
-    setActionNotice(
-      updatedDisasters.length > 0
-        ? `🚨 Crisis state updated. Active disasters: [${updatedDisasters.join(" + ")}]`
-        : `✅ All disaster scenarios cleared. System nominal.`
-    );
-    setTimeout(() => setActionNotice(null), 5000);
-
-    await write({
-      type: "station_disaster",
-      method: "POST",
-      url: `/stations/${stationCode}/disaster`,
-      body: { disasterType, toggle: true, activeDisasters: updatedDisasters },
-    });
-  };
 
   // Mitigation SOP Execution Handler with success chime
   const handleExecuteMitigation = async (rec) => {
@@ -353,31 +306,32 @@ export default function Dashboard() {
   }, [selectedZone, twin]);
 
   return (
-    <div className="min-h-screen px-4 sm:px-8 py-6 max-w-7xl mx-auto space-y-6">
-      {/* Centered Big Bold Mission Control Header */}
-      <header className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] shadow-2xl relative space-y-4">
-        {/* Top Utility Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] shadow-inner">
+    <div className="min-h-screen min-h-[100dvh] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto space-y-4 sm:space-y-6 overflow-x-hidden">
+      {/* Centered Futuristic Mission Control Header */}
+      <header className="p-4 sm:p-6 rounded-2xl bg-[var(--bg-panel)]/95 border border-[var(--border-subtle)] shadow-2xl backdrop-blur-xl relative space-y-3.5">
+        {/* Top Control Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[var(--border-subtle)] pb-3">
+          {/* Logo & Operational Status */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] text-[var(--ice-cyan)] shadow-inner shrink-0">
               <Globe className="w-5 h-5 animate-pulse" />
             </div>
-            <div>
-              <span className="font-mono text-[10px] tracking-[0.2em] font-bold text-[var(--ice-cyan)] uppercase">
+            <div className="min-w-0">
+              <span className="font-mono text-[9px] sm:text-[10px] tracking-[0.2em] font-bold text-[var(--ice-cyan)] uppercase block truncate">
                 POLAR MISSION CONTROL
               </span>
-              <p className="text-[11px] text-[var(--text-tertiary)] font-mono">
-                Edge Command &amp; Telemetry
+              <p className="text-[10px] sm:text-[11px] text-[var(--text-tertiary)] font-mono truncate">
+                ISRO GSAT Telemetry &amp; Autonomous Twin
               </p>
             </div>
           </div>
 
-          {/* Navigation, Station Switcher, Sound & User Controls */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Audio Feedback Toggle */}
+          {/* Controls: Audio, Reports, Scenario Lab, Station Switcher & User */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Audio Toggle */}
             <button
               onClick={handleToggleSound}
-              className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1 text-xs font-mono font-semibold ${
+              className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1 text-xs font-mono font-semibold shrink-0 ${
                 muted
                   ? "bg-red-950/30 border-red-500/40 text-red-400"
                   : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--ice-cyan)] hover:border-[var(--ice-cyan)]"
@@ -385,23 +339,23 @@ export default function Dashboard() {
               title={muted ? "Unmute Mission Control Sound Effects" : "Mute Sound FX"}
             >
               {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-              <span className="hidden sm:inline">{muted ? "Muted" : "Audio On"}</span>
+              <span className="hidden md:inline">{muted ? "Muted" : "Audio"}</span>
             </button>
 
             {/* Historical Reports Navigation */}
             <Link
               to="/analytics"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] hover:border-[var(--ice-cyan)] text-xs font-semibold text-[var(--text-primary)] hover:text-[var(--ice-cyan)] transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] hover:border-[var(--ice-cyan)] text-xs font-semibold text-[var(--text-primary)] hover:text-[var(--ice-cyan)] transition cursor-pointer shrink-0"
               title="View Historical Analytics, Graphs & Tabular Reports"
             >
               <BarChart3 className="w-3.5 h-3.5 text-[var(--ice-cyan)]" />
-              <span>Reports</span>
+              <span className="hidden xs:inline">Reports</span>
             </Link>
 
             {/* Scenario Lab Button */}
             <Link
               to="/simulator"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-950/30 hover:bg-amber-950/60 text-amber-300 text-xs font-mono font-semibold transition cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/40 bg-amber-950/30 hover:bg-amber-950/60 text-amber-300 text-xs font-mono font-semibold transition cursor-pointer shadow-sm shrink-0"
               title="Open Scenario Lab testing console to inject disasters"
             >
               <FlaskConical className="w-3.5 h-3.5" />
@@ -409,7 +363,7 @@ export default function Dashboard() {
             </Link>
 
             {/* Station Switcher */}
-            <div className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-1 overflow-hidden">
+            <div className="flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-1 overflow-hidden shrink-0">
               {STATIONS.map((s) => (
                 <button
                   key={s.code}
@@ -417,31 +371,28 @@ export default function Dashboard() {
                     setStationCode(s.code);
                     setSelectedZone(null);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
                     stationCode === s.code
                       ? "bg-[var(--bg-panel-raised)] text-[var(--ice-cyan)] shadow-sm border border-[var(--ice-cyan-dim)]"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                 >
-                  {s.label}
+                  <span className="sm:hidden">{s.label}</span>
+                  <span className="hidden sm:inline">{s.fullLabel}</span>
                 </button>
               ))}
             </div>
 
-            {/* Time & User */}
-            <div className="hidden xl:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[var(--bg-deep)] border border-[var(--border-subtle)] font-mono text-xs text-[var(--text-secondary)]">
-              <Clock className="w-3.5 h-3.5 text-[var(--ice-cyan)]" />
-              <span>UTC: {currentTime.toUTCString().slice(17, 25)}</span>
-            </div>
-
-            <div className="flex items-center gap-2 pl-2 border-l border-[var(--border-subtle)]">
-              <div className="text-right hidden sm:block">
+            {/* User Badge & Sign Out */}
+            <div className="flex items-center gap-2 pl-1.5 border-l border-[var(--border-subtle)]">
+              <div className="text-right hidden lg:block">
                 <p className="text-xs font-medium text-[var(--text-primary)]">{user?.name || "Commander"}</p>
-                <p className="text-[10px] text-[var(--text-tertiary)] uppercase font-mono">{user?.role || "HQ Admin"}</p>
+                <p className="text-[9px] text-[var(--text-tertiary)] uppercase font-mono">{user?.clearance || user?.role || "HQ Admin"}</p>
               </div>
               <button
                 onClick={logout}
-                className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-500/40 transition cursor-pointer"
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-500/40 transition cursor-pointer shrink-0"
+                title="Sign out of mission session"
               >
                 Sign out
               </button>
@@ -450,12 +401,15 @@ export default function Dashboard() {
         </div>
 
         {/* Big Bold Centered Title */}
-        <div className="text-center py-2">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow-xl">
+        <div className="text-center py-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white drop-shadow-xl font-display">
             <span className="text-[var(--ice-cyan)] font-extrabold">DigiAI ICE TWIN</span>
             <span className="text-gray-400 font-normal mx-2 sm:mx-3">-</span>
             <span className="text-white font-extrabold">Antarctic Intelligence &amp; Digital Twin</span>
           </h1>
+          <p className="font-mono text-[10px] sm:text-xs text-[var(--text-tertiary)] mt-1">
+            Maitri (70°S · Schirmacher Oasis) &amp; Bharati (69°S · Larsemann Hills) Polar Stations
+          </p>
         </div>
       </header>
 
@@ -465,11 +419,11 @@ export default function Dashboard() {
       {/* Action Notification Toast */}
       {actionNotice && (
         <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/80 to-blue-950/80 border border-[var(--ice-cyan)] text-cyan-200 text-xs font-mono flex items-center justify-between animate-fadeIn shadow-lg">
-          <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-[var(--ice-cyan)] animate-spin" />
-            <span>{actionNotice}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <Radio className="w-4 h-4 text-[var(--ice-cyan)] animate-spin shrink-0" />
+            <span className="truncate">{actionNotice}</span>
           </div>
-          <button onClick={() => setActionNotice(null)} className="cursor-pointer text-cyan-300 hover:text-white">
+          <button onClick={() => setActionNotice(null)} className="cursor-pointer text-cyan-300 hover:text-white shrink-0 ml-2">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -481,6 +435,28 @@ export default function Dashboard() {
         onExecuteMitigation={handleExecuteMitigation}
       />
 
+      {/* Mobile Category Navigation Pill Bar (High-Tech Cockpit Tab Switcher) */}
+      <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none select-none">
+        {MOBILE_VIEWS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = mobileView === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setMobileView(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-semibold whitespace-nowrap transition cursor-pointer shrink-0 ${
+                isActive
+                  ? "bg-[var(--ice-cyan)] text-black font-bold shadow-md shadow-cyan-500/20"
+                  : "bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-black" : "text-[var(--ice-cyan)]"}`} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="p-12 text-center rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] space-y-3">
           <RefreshCw className="w-8 h-8 text-[var(--ice-cyan)] animate-spin mx-auto" />
@@ -489,38 +465,40 @@ export default function Dashboard() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main 2-Column Left Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Live 2D Schematic Digital Twin */}
-            <StationTwin
-              station={twin?.station}
-              isOffline={isOffline || twin?.station?.connectivity?.status === "offline"}
-              selectedZone={selectedZone}
-              onSelectZone={(z) => setSelectedZone(z === selectedZone ? null : z)}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+          {/* Main Left Column (Twin, Telemetry, Risk, Incident) */}
+          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+            {/* 1. Live 2D Schematic Digital Twin */}
+            {(mobileView === "all" || mobileView === "twin") && (
+              <StationTwin
+                station={twin?.station}
+                isOffline={isOffline || twin?.station?.connectivity?.status === "offline"}
+                selectedZone={selectedZone}
+                onSelectZone={(z) => setSelectedZone(z === selectedZone ? null : z)}
+              />
+            )}
 
             {/* Selected Zone Inspection Modal */}
             {selectedZone && selectedZoneData && (
-              <div className="rounded-2xl border border-[var(--ice-cyan-dim)] bg-[var(--bg-panel)] p-5 space-y-3 shadow-2xl relative animate-fadeIn">
+              <div className="rounded-2xl border border-[var(--ice-cyan-dim)] bg-[var(--bg-panel)] p-4 sm:p-5 space-y-3 shadow-2xl relative animate-fadeIn">
                 <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[var(--ice-cyan)]/20 text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)] uppercase font-bold">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-[10px] sm:text-xs px-2 py-0.5 rounded bg-[var(--ice-cyan)]/20 text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)] uppercase font-bold shrink-0">
                       Zone Diagnostic Drilldown
                     </span>
-                    <h4 className="font-display font-semibold text-base text-[var(--text-primary)]">
+                    <h4 className="font-display font-semibold text-sm sm:text-base text-[var(--text-primary)] truncate">
                       {selectedZoneData.label} [{(selectedZoneData.type || "zone").toUpperCase()}]
                     </h4>
                   </div>
                   <button
                     onClick={() => setSelectedZone(null)}
-                    className="p-1 rounded-lg hover:bg-[var(--bg-panel-raised)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                    className="p-1 rounded-lg hover:bg-[var(--bg-panel-raised)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
                   <div className="p-3 rounded-xl bg-[var(--bg-panel-raised)] border border-[var(--border-subtle)]">
                     <p className="text-[10px] text-[var(--text-tertiary)] uppercase font-mono">Operating Status</p>
                     <p className="font-mono text-sm font-bold mt-0.5" style={{ color: selectedZoneData.status === "critical" ? "#FF5D5D" : selectedZoneData.status === "warning" ? "#F4A93B" : "#4ADE80" }}>
@@ -542,35 +520,49 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Real-time telemetry stream */}
-            <TelemetryPanel
-              telemetryByZone={twin?.telemetry || {}}
-              zones={twin?.station?.zones || []}
-            />
+            {/* 2. Real-time telemetry stream */}
+            {(mobileView === "all" || mobileView === "telemetry") && (
+              <TelemetryPanel
+                telemetryByZone={twin?.telemetry || {}}
+                zones={twin?.station?.zones || []}
+              />
+            )}
 
-            {/* AI Predictive Risk & Automated SOP Countermeasures */}
-            <PredictionRiskPanel
-              prediction={prediction}
-              onExecuteMitigation={handleExecuteMitigation}
-            />
+            {/* 3. AI Predictive Risk & Automated SOP Countermeasures */}
+            {(mobileView === "all" || mobileView === "prediction") && (
+              <PredictionRiskPanel
+                prediction={prediction}
+                onExecuteMitigation={handleExecuteMitigation}
+              />
+            )}
 
-            {/* Incident Log */}
-            <IncidentLog
-              incidents={incidents}
-              stationCode={stationCode}
-              onRefresh={loadAll}
-              onLocalIncidentAdded={handleLocalIncidentAdded}
-            />
+            {/* 4. Incident Log (Desktop or Crew/Logs tab) */}
+            {(mobileView === "all" || mobileView === "crew") && (
+              <IncidentLog
+                incidents={incidents}
+                stationCode={stationCode}
+                onRefresh={loadAll}
+                onLocalIncidentAdded={handleLocalIncidentAdded}
+              />
+            )}
           </div>
 
           {/* Right Column: Satellite Radar, Logistics & Crew Panels */}
-          <div className="space-y-6">
-            <SatelliteTracker isOffline={isOffline} />
-            <ResourcePanel resources={resources} />
-            <PersonnelPanel personnel={personnel} onRefresh={loadAll} onLocalSOSIncident={handleLocalIncidentAdded} />
+          <div className="space-y-5 sm:space-y-6">
+            {(mobileView === "all" || mobileView === "satcom") && (
+              <>
+                <SatelliteTracker isOffline={isOffline} />
+                <ResourcePanel resources={resources} />
+              </>
+            )}
+
+            {(mobileView === "all" || mobileView === "crew") && (
+              <PersonnelPanel personnel={personnel} onRefresh={loadAll} onLocalSOSIncident={handleLocalIncidentAdded} />
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+

@@ -238,12 +238,12 @@ export default function ReportsAnalytics() {
         </div>
       </header>
 
-      {/* View Mode Tabs */}
-      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2">
-        <div className="flex items-center gap-2">
+      {/* View Mode Tabs (Scrollable on mobile) */}
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2 gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
           <button
             onClick={() => setActiveTab("graphs")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "graphs"
                 ? "bg-[var(--ice-cyan)]/20 text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-panel)]"
@@ -255,7 +255,7 @@ export default function ReportsAnalytics() {
 
           <button
             onClick={() => setActiveTab("tabular")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "tabular"
                 ? "bg-[var(--ice-cyan)]/20 text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-panel)]"
@@ -267,25 +267,26 @@ export default function ReportsAnalytics() {
 
           <button
             onClick={() => setActiveTab("risk_summary")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold font-display transition cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "risk_summary"
                 ? "bg-[var(--ice-cyan)]/20 text-[var(--ice-cyan)] border border-[var(--ice-cyan-dim)]"
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-panel)]"
             }`}
           >
             <AlertTriangle className="w-4 h-4" />
-            <span>Anomaly &amp; Disaster Risk Summary</span>
+            <span>Risk Summary</span>
           </button>
         </div>
 
         <button
           onClick={fetchAnalytics}
-          className="p-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-panel)] hover:bg-[var(--bg-panel-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+          className="p-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-panel)] hover:bg-[var(--bg-panel-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
           title="Refresh Historical Report"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
+
 
       {/* TAB 1: INDIVIDUAL METRIC TIME-SERIES GRAPHS */}
       {activeTab === "graphs" && (

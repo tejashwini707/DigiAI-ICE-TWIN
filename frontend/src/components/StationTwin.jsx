@@ -306,27 +306,56 @@ export default function StationTwin({ station, isOffline, selectedZone, onSelect
           )}
         </div>
 
+        {/* Mobile Quick Zone Selector Pills (for 100% reliable 1-tap touch access on phones) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:hidden scrollbar-none">
+          <span className="font-mono text-[9px] text-[var(--text-tertiary)] uppercase whitespace-nowrap shrink-0">
+            Quick Zone Tap:
+          </span>
+          {zones.map((z) => {
+            const isSel = selectedZone === z.zoneId;
+            const layout = LAYOUT[z.zoneId] || {};
+            const status = z.status || "nominal";
+            const color = STATUS_COLOR[status] || STATUS_COLOR.nominal;
+            return (
+              <button
+                key={z.zoneId}
+                onClick={() => onSelectZone(isSel ? null : z.zoneId)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-mono whitespace-nowrap border transition cursor-pointer shrink-0 ${
+                  isSel
+                    ? "bg-[var(--ice-cyan)] text-black font-bold border-[var(--ice-cyan)]"
+                    : "bg-[var(--bg-deep)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white"
+                }`}
+              >
+                <span>{layout.icon || "•"}</span>
+                <span>{layout.label || z.label}</span>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+              </button>
+            );
+          })}
+        </div>
+
         {/* Legend */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <span className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">
               Zone Status Index:
             </span>
             {Object.entries(STATUS_COLOR).map(([status, color]) => (
               <div key={status} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                <span className="font-mono text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
+                <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
                   {status}
                 </span>
               </div>
             ))}
           </div>
 
-          <p className="text-[11px] text-[var(--text-tertiary)] italic">
-            Click any zone module to inspect diagnostic equipment telemetry
+          <p className="text-[10px] sm:text-[11px] text-[var(--text-tertiary)] italic">
+            Tap any module to inspect diagnostic equipment telemetry
           </p>
         </div>
       </div>
     </div>
   );
 }
+

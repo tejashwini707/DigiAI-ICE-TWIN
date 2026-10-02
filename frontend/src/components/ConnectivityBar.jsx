@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useConnectivity } from "../context/ConnectivityContext.jsx";
-import { RefreshCw, Radio, CheckCircle2, AlertTriangle, Database, Wifi, WifiOff } from "lucide-react";
+import { RefreshCw, Radio, CheckCircle2, AlertTriangle, Wifi, WifiOff } from "lucide-react";
 
 export default function ConnectivityBar() {
   const {
@@ -48,16 +48,16 @@ export default function ConnectivityBar() {
   return (
     <div className="space-y-2">
       <div
-        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3.5 border transition-all duration-300 shadow-md"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 border transition-all duration-300 shadow-md"
         style={{
           background: isOffline ? "rgba(30, 20, 30, 0.75)" : "var(--bg-panel)",
           borderColor: isOffline ? "rgba(255, 93, 93, 0.4)" : "var(--border-subtle)",
         }}
       >
         {/* Left: Satellite & Link status */}
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3">
           <div
-            className={`p-2 rounded-xl flex items-center justify-center border ${
+            className={`p-2 rounded-xl flex items-center justify-center border shrink-0 ${
               isOffline
                 ? "bg-red-500/10 text-red-400 border-red-500/30 ring-1 ring-red-500/20"
                 : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
@@ -66,27 +66,27 @@ export default function ConnectivityBar() {
             {isOffline ? <WifiOff className="w-4 h-4 animate-pulse" /> : <Wifi className="w-4 h-4" />}
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span
-                className="font-mono text-xs font-bold tracking-wider uppercase"
+                className="font-mono text-[10px] sm:text-xs font-bold tracking-wider uppercase truncate"
                 style={{ color: isOffline ? "var(--status-critical)" : "var(--status-nominal)" }}
               >
-                {isOffline ? "ISRO GSAT-30 SATCOM DROPOUT · AUTONOMOUS EDGE AI ACTIVE" : "ISRO GSAT-30 / GSAT-14 POLAR SATCOM ACTIVE · CONNECTED TO HQ"}
+                {isOffline ? "ISRO GSAT-30 SATCOM DROPOUT" : "ISRO GSAT SATCOM ACTIVE"}
               </span>
 
               {isOffline && (
                 <span className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 uppercase font-bold animate-pulse">
-                  Local Mode
+                  Edge Mode
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-tertiary)] mt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-[11px] text-[var(--text-tertiary)] mt-0.5">
               <span>
                 {queueCount > 0 ? (
-                  <span className="text-amber-300 font-mono font-medium flex items-center gap-1.5">
-                    <span>📦 {queueCount} update{queueCount === 1 ? "" : "s"} cached locally (IndexedDB)</span>
+                  <span className="text-amber-300 font-mono font-medium flex items-center gap-1">
+                    <span>📦 {queueCount} update{queueCount === 1 ? "" : "s"} cached locally</span>
                     <button
                       onClick={handleClearQueue}
                       className="text-[10px] underline text-amber-400/80 hover:text-amber-200 cursor-pointer ml-1"
@@ -96,26 +96,26 @@ export default function ConnectivityBar() {
                     </button>
                   </span>
                 ) : (
-                  <span>All local telemetry in sync with ISRO ground link</span>
+                  <span>All telemetry in sync with ISRO ground link</span>
                 )}
               </span>
               <span>•</span>
-              <span className="font-mono">
+              <span className="font-mono truncate">
                 {syncing
-                  ? "Transmitting telemetry frames via GSAT transponder…"
-                  : `Last synced: ${new Date(lastSyncedAt).toLocaleTimeString()}`}
+                  ? "Transmitting telemetry..."
+                  : `Synced: ${new Date(lastSyncedAt).toLocaleTimeString()}`}
               </span>
             </div>
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Always Visible Sync Now Button */}
           <button
             onClick={handleSyncClick}
             disabled={syncing}
-            className="flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-xl border transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-all cursor-pointer shadow-sm disabled:opacity-50"
             style={{
               borderColor: isOffline ? "var(--border-subtle)" : "var(--ice-cyan)",
               background: syncing ? "rgba(111, 231, 221, 0.15)" : "var(--bg-deep)",
@@ -135,7 +135,7 @@ export default function ConnectivityBar() {
           {/* Simulate Disconnect Toggle */}
           <button
             onClick={() => setSimulatedOffline((v) => !v)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition-all cursor-pointer"
             style={{
               background: simulatedOffline ? "rgba(111, 231, 221, 0.2)" : "var(--bg-deep)",
               color: simulatedOffline ? "var(--ice-cyan)" : "var(--text-secondary)",
@@ -144,7 +144,7 @@ export default function ConnectivityBar() {
             title="Demo control: Simulates losing ISRO GSAT satellite connection (satellite blackout)"
           >
             <Radio className={`w-3.5 h-3.5 ${simulatedOffline ? "text-[var(--ice-cyan)] animate-spin" : ""}`} />
-            <span>{simulatedOffline ? "Restore GSAT Satellite Link" : "Simulate GSAT Drop"}</span>
+            <span>{simulatedOffline ? "Restore GSAT Link" : "Simulate Drop"}</span>
           </button>
         </div>
       </div>
@@ -160,19 +160,19 @@ export default function ConnectivityBar() {
               : "bg-cyan-950/60 border-cyan-500/40 text-cyan-200"
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             ) : feedback.type === "warning" ? (
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             ) : (
-              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
+              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
             )}
-            <span>{feedback.text}</span>
+            <span className="truncate">{feedback.text}</span>
           </div>
           <button
             onClick={() => setFeedback(null)}
-            className="text-xs opacity-70 hover:opacity-100 cursor-pointer ml-3 font-bold"
+            className="text-xs opacity-70 hover:opacity-100 cursor-pointer ml-3 font-bold shrink-0"
           >
             ✕
           </button>
@@ -181,4 +181,3 @@ export default function ConnectivityBar() {
     </div>
   );
 }
-
